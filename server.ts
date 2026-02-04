@@ -1,0 +1,174 @@
+import { Connection, clusterApiUrl, Keypair } from '@solana/web3.js';
+import { AgentMarketplace } from './marketplace';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
+import indexHtml from './index.html';
+
+// Initialize marketplace and wallet
+const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
+const marketplace = new AgentMarketplace(connection);
+
+let wallet: Keypair | null = null;
+const walletPath = join(process.cwd(), 'wallet', 'devnet-wallet.json');
+
+if (existsSync(walletPath)) {
+    const walletData = JSON.parse(readFileSync(walletPath, 'utf-8'));
+    wallet = Keypair.fromSecretKey(new Uint8Array(walletData.secretKey));
+    console.log('💼 Server wallet loaded:', wallet.publicKey.toString());
+}
+
+// Bun server with API endpoints
+Bun.serve({
+    port: 3000,
+    routes: {
+        "/": indexHtml,
+
+        // Get marketplace statistics
+        "/api/stats": {
+            GET: () => {
+                const stats = marketplace.getMarketStats();
+                return Response.json(stats);
+            }
+        },
+
+        // Get all available intelligence
+        "/api/intelligence": {
+            GET: (req) => {
+                const url = new URL(req.url);
+                const category = url.searchParams.get('category');
+                const maxPrice = url.searchParams.get('maxPrice');
+                const minQuality = url.searchParams.get('minQuality');
+
+                const filters: any = {};
+                if (category) filters.category = category;
+                if (maxPrice) filters.maxPrice = parseFloat(maxPrice);
+                if (minQuality) filters.minQuality = parseInt(minQuality);
+
+                const intelligence = marketplace.searchIntelligence(filters);
+                return Response.json(intelligence);
+            }
+        },
+
+        // Get top agents
+        "/api/agents": {
+            GET: (req) => {
+                const url = new URL(req.url);
+                const limit = parseInt(url.searchParams.get('limit') || '10');
+                const agents = marketplace.getTopAgents(limit);
+                return Response.json(agents);
+            }
+        },
+
+        // Purchase intelligence
+        "/api/purchase": {
+            POST: async (req) => {
+                try {
+                    const { intelligenceId, buyerKey } = await req.json();
+
+                    if (!intelligenceId || !buyerKey) {
+                        return Response.json({ error: 'Missing required fields' }, { status: 400 });
+                    }
+
+                    const result = await marketplace.purchaseIntelligence(buyerKey, intelligenceId);
+                    return Response.json(result);
+                } catch (error) {
+                    return Response.json({ error: error.message }, { status: 400 });
+                }
+            }
+        },
+
+        // Rate intelligence
+        "/api/rate": {
+            POST: async (req) => {
+                try {
+                    const { intelligenceId, buyerKey, rating, review } = await req.json();
+
+                    if (!intelligenceId || !buyerKey || !rating) {
+                        return Response.json({ error: 'Missing required fields' }, { status: 400 });
+                    }
+
+                    await marketplace.rateIntelligence(buyerKey, intelligenceId, rating, review);
+                    return Response.json({ success: true });
+                } catch (error) {
+                    return Response.json({ error: error.message }, { status: 400 });
+                }
+            }
+        },
+
+        // Register new agent
+        "/api/register": {
+            POST: async (req) => {
+                try {
+                    const { publicKey, name, description, specialization } = await req.json();
+
+                    if (!publicKey || !name || !description || !specialization) {
+                        return Response.json({ error: 'Missing required fields' }, { status: 400 });
+                    }
+
+                    await marketplace.registerAgent(publicKey, {
+                        name,
+                        description,
+                        specialization,
+                        verified: false
+                    });
+
+                    return Response.json({ success: true });
+                } catch (error) {
+                    return Response.json({ error: error.message }, { status: 400 });
+                }
+            }
+        },
+
+        // List new intelligence
+        "/api/list": {
+            POST: async (req) => {
+                try {
+                    const { sellerKey, title, description, category, price } = await req.json();
+
+                    if (!sellerKey || !title || !description || !category || !price) {
+                        return Response.json({ error: 'Missing required fields' }, { status: 400 });
+                    }
+
+                    const id = await marketplace.listIntelligence(sellerKey, {
+                        title,
+                        description,
+                        category,
+                        price: parseFloat(price)
+                    });
+
+                    return Response.json({ success: true, id });
+                } catch (error) {
+                    return Response.json({ error: error.message }, { status: 400 });
+                }
+            }
+        },
+
+        // Get wallet info (for demo purposes)
+        "/api/wallet": {
+            GET: async () => {
+                if (!wallet) {
+                    return Response.json({ error: 'No wallet available' }, { status: 404 });
+                }
+
+                try {
+                    const balance = await connection.getBalance(wallet.publicKey);
+                    return Response.json({
+                        publicKey: wallet.publicKey.toString(),
+                        balance: balance / 1e9
+                    });
+                } catch (error) {
+                    return Response.json({ error: 'Failed to get wallet info' }, { status: 500 });
+                }
+            }
+        }
+    },
+
+    development: {
+        hmr: true,
+        console: true,
+    },
+});
+
+console.log('🚀 NEXUS Agent Intelligence Marketplace Server');
+console.log('🌐 Server running on http://localhost:3000');
+console.log('💡 First AI-to-AI knowledge trading platform on Solana!');
