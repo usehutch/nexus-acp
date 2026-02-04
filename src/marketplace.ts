@@ -1,8 +1,9 @@
 import type { Connection } from '@solana/web3.js';
-import type { AgentProfile, AgentIntelligence, SearchFilters, MarketStats, PurchaseResult, Rating } from './types/index.js';
+import type { AgentProfile, AgentIntelligence, SearchFilters, MarketStats, PurchaseResult, Rating, RecommendationRequest, PersonalizedRecommendation } from './types/index.js';
 import { AgentManager } from './core/agent-manager.js';
 import { IntelligenceManager } from './core/intelligence-manager.js';
 import { TransactionManager } from './core/transaction-manager.js';
+import { RecommendationManager } from './core/recommendation-manager.js';
 import { SAMPLE_AGENTS, SAMPLE_INTELLIGENCE } from './utils/sample-data.js';
 
 export class AgentMarketplace {
@@ -10,12 +11,14 @@ export class AgentMarketplace {
     private agentManager: AgentManager;
     private intelligenceManager: IntelligenceManager;
     private transactionManager: TransactionManager;
+    private recommendationManager: RecommendationManager;
 
     constructor(connection: Connection) {
         this.connection = connection;
         this.agentManager = new AgentManager();
         this.intelligenceManager = new IntelligenceManager(this.agentManager);
         this.transactionManager = new TransactionManager(this.agentManager, this.intelligenceManager);
+        this.recommendationManager = new RecommendationManager(this.agentManager, this.intelligenceManager, this.transactionManager);
         this.loadSampleData();
     }
 
@@ -62,6 +65,29 @@ export class AgentMarketplace {
             avgPrice: this.transactionManager.getAveragePrice(),
             categories: this.intelligenceManager.getCategoryCounts()
         };
+    }
+
+    // Recommendation Engine - NEW FEATURE
+    getPersonalizedRecommendations(request: RecommendationRequest): PersonalizedRecommendation[] {
+        return this.recommendationManager.getPersonalizedRecommendations(request);
+    }
+
+    getTrendingIntelligence(limit: number = 5): AgentIntelligence[] {
+        return this.recommendationManager.getTrendingIntelligence(limit);
+    }
+
+    getSimilarAgentRecommendations(agentKey: string, limit: number = 5): AgentIntelligence[] {
+        return this.recommendationManager.getSimilarAgentRecommendations(agentKey, limit);
+    }
+
+    // Quick recommendation for an agent based on their profile
+    getQuickRecommendations(agentKey: string, count: number = 5): PersonalizedRecommendation[] {
+        return this.getPersonalizedRecommendations({
+            agentKey,
+            count,
+            excludeOwned: true,
+            minQuality: 50 // Only recommend quality intelligence
+        });
     }
 
     // Load sample data for demo

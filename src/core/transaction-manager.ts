@@ -200,4 +200,8 @@ export class TransactionManager {
         const count = this.transactions.length;
         return count > 0 ? this.getTotalVolume() / count : 0;
     }
+
+    getAgentTransactions(agentKey: string): IntelligenceTransaction[] {
+        return this.transactions.filter(tx => tx.buyer === agentKey || tx.seller === agentKey);
+    }
 }

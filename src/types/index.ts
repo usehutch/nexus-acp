@@ -159,3 +159,30 @@ export interface TransactionDetails extends IntelligenceTransaction {
     seller_profile?: Partial<AgentProfile>;
     status: 'pending' | 'completed' | 'failed';
 }
+
+// Recommendation system types
+export interface RecommendationScore {
+    intelligenceId: string;
+    score: number;
+    reasons: RecommendationReason[];
+}
+
+export interface RecommendationReason {
+    type: 'specialization_match' | 'category_preference' | 'quality_based' | 'trending' | 'similar_buyers';
+    weight: number;
+    description: string;
+}
+
+export interface RecommendationRequest {
+    agentKey: string;
+    count?: number;
+    excludeOwned?: boolean;
+    minQuality?: number;
+    categories?: IntelligenceCategory[];
+}
+
+export interface PersonalizedRecommendation extends AgentIntelligence {
+    recommendationScore: number;
+    reasons: RecommendationReason[];
+    isPersonalized: boolean;
+}
