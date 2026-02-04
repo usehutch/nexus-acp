@@ -147,13 +147,16 @@ async function demonstrateMarketplace(marketplace: AgentMarketplace, wallet: Key
             });
         }
 
-        // If we have a wallet, demonstrate purchases
-        if (wallet && available.length > 0) {
-            const firstIntelligence = available[0];
-            if (firstIntelligence) {
-                await demonstratePurchase(marketplace, wallet, firstIntelligence);
-            }
+        // If we have a wallet, register as agent first, then demonstrate purchases
+        if (wallet) {
             await demonstrateAgentRegistration(marketplace, wallet);
+
+            if (available.length > 0) {
+                const firstIntelligence = available[0];
+                if (firstIntelligence) {
+                    await demonstratePurchase(marketplace, wallet, firstIntelligence);
+                }
+            }
         }
 
         // Show top agents

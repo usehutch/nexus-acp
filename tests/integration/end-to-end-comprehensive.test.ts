@@ -24,10 +24,11 @@ describe('NEXUS Marketplace - End-to-End Integration', () => {
     describe('Complete Agent Lifecycle', () => {
         it('should support full agent journey from registration to retirement', async () => {
             // 1. Agent Registration
-            const agentId = await marketplace.registerAgent(
-                'LifecycleAgent',
-                'A comprehensive test agent for lifecycle testing with proper description length'
-            );
+            const agentId = await marketplace.registerAgent('LifecycleAgent', {
+                name: 'Lifecycle Test Agent',
+                description: 'A comprehensive test agent for lifecycle testing with proper description length',
+                specialization: ['market-analysis']
+            });
             expect(agentId).toBeDefined();
 
             let agent = marketplace.getAgent('LifecycleAgent');
@@ -48,10 +49,11 @@ describe('NEXUS Marketplace - End-to-End Integration', () => {
             const initialRep = agent!.reputation_score;
 
             // 4. Sales and Feedback
-            await marketplace.registerAgent(
-                'CustomerAgent',
-                'Customer agent for testing lifecycle with proper description length'
-            );
+            await marketplace.registerAgent('CustomerAgent', {
+                name: 'Customer Test Agent',
+                description: 'Customer agent for testing lifecycle with proper description length',
+                specialization: ['market-analysis']
+            });
 
             const transaction = await marketplace.purchaseIntelligence(
                 'CustomerAgent',
@@ -72,10 +74,11 @@ describe('NEXUS Marketplace - End-to-End Integration', () => {
             const agents = ['ConsistencyAgent1', 'ConsistencyAgent2', 'ConsistencyAgent3'];
 
             for (const agentName of agents) {
-                await marketplace.registerAgent(
-                    agentName,
-                    `Consistency test agent ${agentName} with proper description length for testing`
-                );
+                await marketplace.registerAgent(agentName, {
+                    name: `${agentName} Consistency Agent`,
+                    description: `Consistency test agent ${agentName} with proper description length for testing`,
+                    specialization: ['market-analysis']
+                });
             }
 
             // Create intelligence from each agent
@@ -120,17 +123,19 @@ describe('NEXUS Marketplace - End-to-End Integration', () => {
 
             // Register all agents
             for (const seller of sellers) {
-                await marketplace.registerAgent(
-                    seller,
-                    `Competitive seller ${seller} with comprehensive description for marketplace testing`
-                );
+                await marketplace.registerAgent(seller, {
+                    name: `${seller} Competitive Seller`,
+                    description: `Competitive seller ${seller} with comprehensive description for marketplace testing`,
+                    specialization: ['market-analysis', 'trading']
+                });
             }
 
             for (const buyer of buyers) {
-                await marketplace.registerAgent(
-                    buyer,
-                    `Active buyer ${buyer} with comprehensive description for marketplace testing`
-                );
+                await marketplace.registerAgent(buyer, {
+                    name: `${buyer} Active Buyer`,
+                    description: `Active buyer ${buyer} with comprehensive description for marketplace testing`,
+                    specialization: ['market-analysis']
+                });
             }
 
             // Create competing intelligence in same category
@@ -178,10 +183,11 @@ describe('NEXUS Marketplace - End-to-End Integration', () => {
 
             // Register diverse agents
             for (let i = 0; i < agentCount; i++) {
-                await marketplace.registerAgent(
-                    `DiscoveryAgent${i}`,
-                    `Discovery agent ${i} specialized in various intelligence types with proper description`
-                );
+                await marketplace.registerAgent(`DiscoveryAgent${i}`, {
+                    name: `Discovery Agent ${i}`,
+                    description: `Discovery agent ${i} specialized in various intelligence types with proper description`,
+                    specialization: ['market-analysis', 'defi-strategy', 'price-prediction'][i % 3] ? [['market-analysis', 'defi-strategy', 'price-prediction'][i % 3]] : ['market-analysis']
+                });
             }
 
             // Create diverse intelligence catalog
@@ -238,10 +244,11 @@ describe('NEXUS Marketplace - End-to-End Integration', () => {
             const agents = [];
             for (let i = 0; i < agentCount; i++) {
                 const agentName = `VolumeAgent${i}`;
-                await marketplace.registerAgent(
-                    agentName,
-                    `Volume test agent ${i} for high-load testing with comprehensive description`
-                );
+                await marketplace.registerAgent(agentName, {
+                    name: `Volume Test Agent ${i}`,
+                    description: `Volume test agent ${i} for high-load testing with comprehensive description`,
+                    specialization: ['market-analysis']
+                });
                 agents.push(agentName);
             }
 
@@ -309,10 +316,11 @@ describe('NEXUS Marketplace - End-to-End Integration', () => {
 
                         // Register agent
                         const agentName = `ConcurrentAgent${id}`;
-                        await marketplace.registerAgent(
-                            agentName,
-                            `Concurrent test agent ${id} for performance testing with proper description`
-                        );
+                        await marketplace.registerAgent(agentName, {
+                            name: `Concurrent Test Agent ${id}`,
+                            description: `Concurrent test agent ${id} for performance testing with proper description`,
+                            specialization: ['market-analysis']
+                        });
                         results.push(`Agent ${agentName} registered`);
 
                         // Create intelligence
@@ -347,9 +355,21 @@ describe('NEXUS Marketplace - End-to-End Integration', () => {
     describe('Data Consistency and Recovery', () => {
         it('should maintain referential integrity across operations', async () => {
             // Setup interconnected data
-            await marketplace.registerAgent('IntegrityAgent1', 'First integrity test agent with proper description');
-            await marketplace.registerAgent('IntegrityAgent2', 'Second integrity test agent with proper description');
-            await marketplace.registerAgent('IntegrityAgent3', 'Third integrity test agent with proper description');
+            await marketplace.registerAgent('IntegrityAgent1', {
+                name: 'Integrity Test Agent 1',
+                description: 'First integrity test agent with proper description',
+                specialization: ['market-analysis']
+            });
+            await marketplace.registerAgent('IntegrityAgent2', {
+                name: 'Integrity Test Agent 2',
+                description: 'Second integrity test agent with proper description',
+                specialization: ['defi-strategy']
+            });
+            await marketplace.registerAgent('IntegrityAgent3', {
+                name: 'Integrity Test Agent 3',
+                description: 'Third integrity test agent with proper description',
+                specialization: ['risk-assessment']
+            });
 
             // Create intelligence network
             const intel1 = await marketplace.listIntelligence('IntegrityAgent1', {
@@ -399,7 +419,11 @@ describe('NEXUS Marketplace - End-to-End Integration', () => {
             // Test various edge cases that could occur in production
 
             // 1. Rapid successive operations
-            await marketplace.registerAgent('EdgeAgent', 'Edge case testing agent with proper description');
+            await marketplace.registerAgent('EdgeAgent', {
+                name: 'Edge Case Test Agent',
+                description: 'Edge case testing agent with proper description',
+                specialization: ['market-analysis']
+            });
 
             const rapidPromises = [];
             for (let i = 0; i < 10; i++) {
@@ -446,10 +470,11 @@ describe('NEXUS Marketplace - End-to-End Integration', () => {
             // Morning: New agents join
             const morningAgents = ['TradingBot1', 'DataAnalyst', 'CryptoResearcher'];
             for (const agent of morningAgents) {
-                await marketplace.registerAgent(
-                    agent,
-                    `Professional ${agent} providing high-quality intelligence with comprehensive market analysis`
-                );
+                await marketplace.registerAgent(agent, {
+                    name: `Professional ${agent}`,
+                    description: `Professional ${agent} providing high-quality intelligence with comprehensive market analysis`,
+                    specialization: agent === 'TradingBot1' ? ['market-analysis', 'trading'] : agent === 'DataAnalyst' ? ['defi-strategy', 'market-analysis'] : ['price-prediction', 'research']
+                });
             }
 
             // Mid-morning: Agents list their intelligence
@@ -477,10 +502,11 @@ describe('NEXUS Marketplace - End-to-End Integration', () => {
             // Noon: Customer agents discover and evaluate
             const customers = ['HedgeFund', 'RetailTrader', 'InstitutionalInvestor'];
             for (const customer of customers) {
-                await marketplace.registerAgent(
-                    customer,
-                    `Professional ${customer} seeking high-quality intelligence for investment decisions`
-                );
+                await marketplace.registerAgent(customer, {
+                    name: `Professional ${customer}`,
+                    description: `Professional ${customer} seeking high-quality intelligence for investment decisions`,
+                    specialization: ['investment']
+                });
 
                 // Browse marketplace
                 const available = marketplace.searchIntelligence({});

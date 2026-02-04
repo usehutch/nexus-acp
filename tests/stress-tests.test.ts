@@ -343,14 +343,12 @@ describe('Performance and Stress Tests', () => {
     describe('Edge Cases and Boundary Conditions', () => {
         it('should handle extreme data values by validation', async () => {
             // Test that extreme agent data is properly rejected
-            await expect(async () => {
-                await agentManager.registerAgent('edge-agent-1', {
-                    name: 'A'.repeat(1000), // Very long name
-                    description: 'B'.repeat(5000), // Very long description
-                    specialization: ['market-analysis'],
-                    verified: false
-                });
-            }).rejects.toThrow();
+            await expect(agentManager.registerAgent('edge-agent-1', {
+                name: 'A'.repeat(1000), // Very long name
+                description: 'B'.repeat(5000), // Very long description
+                specialization: ['market-analysis'],
+                verified: false
+            })).rejects.toThrow();
 
             expect(agentManager.hasAgent('edge-agent-1')).toBe(false);
 
@@ -363,14 +361,12 @@ describe('Performance and Stress Tests', () => {
             });
 
             // Test with extreme pricing (price below minimum should be rejected)
-            await expect(async () => {
-                await intelligenceManager.listIntelligence('pricing-agent', {
-                    title: 'Extreme Price Intelligence',
-                    description: 'Testing extreme pricing',
-                    category: 'market-analysis',
-                    price: 0.0001 // Below minimum
-                });
-            }).rejects.toThrow();
+            await expect(intelligenceManager.listIntelligence('pricing-agent', {
+                title: 'Extreme Price Intelligence',
+                description: 'Testing extreme pricing',
+                category: 'market-analysis',
+                price: 0.0001 // Below minimum
+            })).rejects.toThrow();
 
             // Test with maximum valid price
             const validIntelId = await intelligenceManager.listIntelligence('pricing-agent', {
@@ -392,14 +388,12 @@ describe('Performance and Stress Tests', () => {
             expect(extremeSearchResults2.length).toBeGreaterThan(0);
 
             // Test with zero price (should be rejected since minimum is 0.001)
-            await expect(async () => {
-                await intelligenceManager.listIntelligence('pricing-agent', {
-                    title: 'Free Intelligence',
-                    description: 'Zero price intelligence',
-                    category: 'risk-assessment',
-                    price: 0
-                });
-            }).rejects.toThrow();
+            await expect(intelligenceManager.listIntelligence('pricing-agent', {
+                title: 'Free Intelligence',
+                description: 'Zero price intelligence',
+                category: 'risk-assessment',
+                price: 0
+            })).rejects.toThrow();
         });
 
         it('should handle special characters and unicode', async () => {

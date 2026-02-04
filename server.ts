@@ -294,11 +294,26 @@ const server = Bun.serve({
                     // Use the server wallet for simulation if available, otherwise use a default valid key
                     const simulationKey = wallet?.publicKey.toString() || '11111111111111111111111111111111';
 
+                    // First, ensure the simulation agent is registered
+                    try {
+                        await marketplace.registerAgent(simulationKey, {
+                            name: 'Simulation Agent',
+                            description: 'Automated agent for marketplace simulation',
+                            specialization: ['market-analysis', 'simulation'],
+                            verified: false
+                        });
+                    } catch (error) {
+                        // Agent might already be registered, continue
+                    }
+
                     // Simulate an AI agent purchase
                     const intelligence = marketplace.searchIntelligence();
                     if (intelligence.length > 0) {
-                        const randomIntel = intelligence[Math.floor(Math.random() * intelligence.length)];
-                        if (randomIntel) {
+                        // Find an intelligence item that is not owned by the simulation agent
+                        const availableIntel = intelligence.filter(intel => intel.seller !== simulationKey);
+
+                        if (availableIntel.length > 0) {
+                            const randomIntel = availableIntel[Math.floor(Math.random() * availableIntel.length)];
                             const result = await withRetry(async () => {
                                 return await marketplace.purchaseIntelligence(simulationKey, randomIntel.id);
                             }, 'simulate purchase', { maxRetries: 2 });
@@ -313,12 +328,17 @@ const server = Bun.serve({
                             return {
                                 message: 'Agent activity simulated successfully',
                                 purchaseResult: result,
-                                simulatedBy: simulationKey
+                                simulatedBy: simulationKey,
+                                transactionDetails: {
+                                    intelligence: randomIntel.title,
+                                    price: randomIntel.price,
+                                    category: randomIntel.category
+                                }
                             };
                         }
                     }
 
-                    return { message: 'No intelligence available for simulation' };
+                    return { message: 'No intelligence available for simulation (agent may own all listings)' };
                 }, '/api/simulate');
             }
 

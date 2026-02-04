@@ -32,7 +32,11 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
 
             for (const name of maliciousNames) {
                 await expect(async () => {
-                    await marketplace.registerAgent(name, 'description that is long enough to meet requirements');
+                    await marketplace.registerAgent(name, {
+                        name: 'Security Test Agent',
+                        description: 'description that is long enough to meet requirements',
+                        specialization: ['security-testing']
+                    });
                 }).toThrow();
             }
         });
@@ -47,7 +51,11 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
 
             for (const payload of xssPayloads) {
                 // Should either reject or sanitize
-                const result = await marketplace.registerAgent('test-agent', payload);
+                const result = await marketplace.registerAgent('test-agent', {
+                    name: 'XSS Test Agent',
+                    description: payload,
+                    specialization: ['security-testing']
+                });
                 expect(result).toBeDefined();
 
                 const agent = marketplace.getAgent('test-agent');
@@ -67,10 +75,11 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
             ];
 
             for (const name of specialChars) {
-                const result = await marketplace.registerAgent(
-                    name,
-                    'This is a comprehensive description that meets the minimum length requirements for testing unicode'
-                );
+                const result = await marketplace.registerAgent(name, {
+                    name: 'Unicode Test Agent',
+                    description: 'This is a comprehensive description that meets the minimum length requirements for testing unicode',
+                    specialization: ['unicode-testing']
+                });
                 expect(result).toBeDefined();
             }
         });
@@ -78,10 +87,11 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
         it('should enforce rate limiting for rapid registrations', async () => {
             const promises = [];
             for (let i = 0; i < 100; i++) {
-                promises.push(marketplace.registerAgent(
-                    `rapid-agent-${i}`,
-                    `This is a description for rapid agent ${i} that meets the minimum length requirements`
-                ));
+                promises.push(marketplace.registerAgent(`rapid-agent-${i}`, {
+                    name: `Rapid Test Agent ${i}`,
+                    description: `This is a description for rapid agent ${i} that meets the minimum length requirements`,
+                    specialization: ['rate-limiting-test']
+                }));
             }
 
             // Should not crash or cause memory issues
@@ -95,7 +105,11 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
             const maxLengthName = 'a'.repeat(100); // Assuming 100 char limit
             const maxLengthDescription = 'b'.repeat(1000); // Max description length
 
-            const result = await marketplace.registerAgent(maxLengthName, maxLengthDescription);
+            const result = await marketplace.registerAgent(maxLengthName, {
+                name: 'Max Length Test Agent',
+                description: maxLengthDescription,
+                specialization: ['boundary-testing']
+            });
             expect(result).toBeDefined();
         });
 
@@ -107,10 +121,11 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
 
         it('should handle concurrent agent registration', async () => {
             const promises = Array.from({ length: 50 }, (_, i) =>
-                marketplace.registerAgent(
-                    `concurrent-agent-${i}`,
-                    `Concurrent registration test for agent ${i} with adequate description length`
-                )
+                marketplace.registerAgent(`concurrent-agent-${i}`, {
+                    name: `Concurrent Test Agent ${i}`,
+                    description: `Concurrent registration test for agent ${i} with adequate description length`,
+                    specialization: ['concurrency-testing']
+                })
             );
 
             const results = await Promise.allSettled(promises);
@@ -121,10 +136,11 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
         it('should maintain data consistency under load', async () => {
             // Register agents concurrently
             const registrations = Array.from({ length: 20 }, (_, i) =>
-                marketplace.registerAgent(
-                    `load-test-agent-${i}`,
-                    `Load testing agent ${i} with proper description length for consistency verification`
-                )
+                marketplace.registerAgent(`load-test-agent-${i}`, {
+                    name: `Load Test Agent ${i}`,
+                    description: `Load testing agent ${i} with proper description length for consistency verification`,
+                    specialization: ['load-testing']
+                })
             );
 
             await Promise.all(registrations);
@@ -146,10 +162,11 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
 
             // Create and destroy many objects
             for (let i = 0; i < 1000; i++) {
-                await marketplace.registerAgent(
-                    `memory-test-${i}`,
-                    `Memory test agent ${i} with adequate description length to test memory management`
-                );
+                await marketplace.registerAgent(`memory-test-${i}`, {
+                    name: `Memory Test Agent ${i}`,
+                    description: `Memory test agent ${i} with adequate description length to test memory management`,
+                    specialization: ['memory-testing']
+                });
             }
 
             // Force garbage collection if available
@@ -186,8 +203,16 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
     describe('Error Recovery and Resilience', () => {
         it('should recover from corrupted internal state', async () => {
             // Register some agents
-            await marketplace.registerAgent('test1', 'First test agent with proper description length');
-            await marketplace.registerAgent('test2', 'Second test agent with proper description length');
+            await marketplace.registerAgent('test1', {
+                name: 'First Recovery Test Agent',
+                description: 'First test agent with proper description length',
+                specialization: ['error-recovery']
+            });
+            await marketplace.registerAgent('test2', {
+                name: 'Second Recovery Test Agent',
+                description: 'Second test agent with proper description length',
+                specialization: ['error-recovery']
+            });
 
             // Simulate state corruption (if internal state is accessible)
             // Note: This would depend on the actual implementation
@@ -200,7 +225,11 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
         });
 
         it('should validate marketplace integrity', async () => {
-            await marketplace.registerAgent('integrity-test', 'Agent for integrity testing with proper description length');
+            await marketplace.registerAgent('integrity-test', {
+                name: 'Integrity Test Agent',
+                description: 'Agent for integrity testing with proper description length',
+                specialization: ['integrity-testing']
+            });
 
             const stats = marketplace.getMarketplaceStats();
             expect(stats).toBeDefined();
@@ -215,10 +244,11 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
             // Register many agents
             const promises = [];
             for (let i = 0; i < 500; i++) {
-                promises.push(marketplace.registerAgent(
-                    `perf-agent-${i}`,
-                    `Performance test agent ${i} with adequate description for testing scalability`
-                ));
+                promises.push(marketplace.registerAgent(`perf-agent-${i}`, {
+                    name: `Performance Test Agent ${i}`,
+                    description: `Performance test agent ${i} with adequate description for testing scalability`,
+                    specialization: ['performance-testing']
+                }));
             }
 
             await Promise.all(promises);
@@ -240,10 +270,11 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
 
             for (let i = 0; i < 50; i++) {
                 operations.push(async () => {
-                    await marketplace.registerAgent(
-                        `rapid-op-${i}`,
-                        `Rapid operation test agent ${i} with proper description length`
-                    );
+                    await marketplace.registerAgent(`rapid-op-${i}`, {
+                        name: `Rapid Operation Test Agent ${i}`,
+                        description: `Rapid operation test agent ${i} with proper description length`,
+                        specialization: ['rapid-operations']
+                    });
                     return marketplace.getAgent(`rapid-op-${i}`);
                 });
             }
@@ -255,8 +286,16 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
 
     describe('Data Validation and Consistency', () => {
         it('should maintain referential integrity', async () => {
-            await marketplace.registerAgent('ref-test-1', 'Reference test agent 1 with proper description');
-            await marketplace.registerAgent('ref-test-2', 'Reference test agent 2 with proper description');
+            await marketplace.registerAgent('ref-test-1', {
+                name: 'Reference Test Agent 1',
+                description: 'Reference test agent 1 with proper description',
+                specialization: ['referential-integrity']
+            });
+            await marketplace.registerAgent('ref-test-2', {
+                name: 'Reference Test Agent 2',
+                description: 'Reference test agent 2 with proper description',
+                specialization: ['referential-integrity']
+            });
 
             const agent1 = marketplace.getAgent('ref-test-1');
             const agent2 = marketplace.getAgent('ref-test-2');
@@ -267,7 +306,11 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
         });
 
         it('should validate agent data completeness', async () => {
-            await marketplace.registerAgent('complete-test', 'Agent for completeness testing with proper description');
+            await marketplace.registerAgent('complete-test', {
+                name: 'Completeness Test Agent',
+                description: 'Agent for completeness testing with proper description',
+                specialization: ['data-validation']
+            });
 
             const agent = marketplace.getAgent('complete-test');
             expect(agent).toBeDefined();
@@ -279,10 +322,18 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
         });
 
         it('should prevent duplicate agent registration', async () => {
-            await marketplace.registerAgent('duplicate-test', 'First registration with proper description');
+            await marketplace.registerAgent('duplicate-test', {
+                name: 'Duplicate Test Agent',
+                description: 'First registration with proper description',
+                specialization: ['duplicate-prevention']
+            });
 
             await expect(async () => {
-                await marketplace.registerAgent('duplicate-test', 'Attempted duplicate registration');
+                await marketplace.registerAgent('duplicate-test', {
+                    name: 'Duplicate Test Agent 2',
+                    description: 'Attempted duplicate registration',
+                    specialization: ['duplicate-prevention']
+                });
             }).toThrow();
         });
     });
@@ -297,7 +348,11 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
 
             // Attempt to register with malicious object
             await expect(async () => {
-                await marketplace.registerAgent('proto-test', maliciousInput);
+                await marketplace.registerAgent('proto-test', {
+                    name: 'Prototype Pollution Test',
+                    description: 'Testing prototype pollution protection',
+                    specialization: ['security-testing']
+                });
             }).not.toThrow();
 
             // Verify prototype wasn't polluted
@@ -308,12 +363,20 @@ describe('AgentMarketplace - Comprehensive Tests', () => {
             const hugeInput = 'x'.repeat(10000000); // 10MB string
 
             await expect(async () => {
-                await marketplace.registerAgent('overflow-test', hugeInput);
+                await marketplace.registerAgent('overflow-test', {
+                    name: 'Buffer Overflow Test',
+                    description: hugeInput,
+                    specialization: ['security-testing']
+                });
             }).toThrow(); // Should reject oversized input
         });
 
         it('should sanitize output to prevent information leakage', async () => {
-            await marketplace.registerAgent('leak-test', 'Test for information leakage prevention');
+            await marketplace.registerAgent('leak-test', {
+                name: 'Information Leak Test Agent',
+                description: 'Test for information leakage prevention',
+                specialization: ['security-testing']
+            });
 
             const agent = marketplace.getAgent('leak-test');
             expect(agent).toBeDefined();
