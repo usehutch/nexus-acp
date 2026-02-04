@@ -65,7 +65,7 @@ export class PrivacyLayer {
                 return this.simulatePrivacyProtection(request);
             }
 
-            const data = await response.json();
+            const data = await response.json() as SipherShieldResponse;
             console.log(`✅ Transaction shielded with stealth address: ${data.stealthAddress?.substr(0, 8)}...`);
 
             return {
@@ -137,7 +137,7 @@ export class PrivacyLayer {
         try {
             const response = await fetch(`${this.config.endpoint}/verify/${transactionId}`);
             if (response.ok) {
-                const data = await response.json();
+                const data = await response.json() as { verified: boolean };
                 return data.verified === true;
             }
         } catch (error) {

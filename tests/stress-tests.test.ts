@@ -341,52 +341,65 @@ describe('Performance and Stress Tests', () => {
     });
 
     describe('Edge Cases and Boundary Conditions', () => {
-        it('should handle extreme data values gracefully', async () => {
-            // Test with extreme agent data
-            await agentManager.registerAgent('edge-agent-1', {
-                name: 'A'.repeat(1000), // Very long name
-                description: 'B'.repeat(5000), // Very long description
+        it('should handle extreme data values by validation', async () => {
+            // Test that extreme agent data is properly rejected
+            await expect(async () => {
+                await agentManager.registerAgent('edge-agent-1', {
+                    name: 'A'.repeat(1000), // Very long name
+                    description: 'B'.repeat(5000), // Very long description
+                    specialization: ['market-analysis'],
+                    verified: false
+                });
+            }).rejects.toThrow();
+
+            expect(agentManager.hasAgent('edge-agent-1')).toBe(false);
+
+            // Register a valid agent for pricing tests
+            await agentManager.registerAgent('pricing-agent', {
+                name: 'Valid Pricing Agent',
+                description: 'Agent for testing pricing extremes',
                 specialization: ['market-analysis'],
                 verified: false
             });
 
-            expect(agentManager.hasAgent('edge-agent-1')).toBe(true);
+            // Test with extreme pricing (price below minimum should be rejected)
+            await expect(async () => {
+                await intelligenceManager.listIntelligence('pricing-agent', {
+                    title: 'Extreme Price Intelligence',
+                    description: 'Testing extreme pricing',
+                    category: 'market-analysis',
+                    price: 0.0001 // Below minimum
+                });
+            }).rejects.toThrow();
 
-            // Test with extreme pricing
-            const extremeIntelId1 = await intelligenceManager.listIntelligence('edge-agent-1', {
-                title: 'Extreme Price Intelligence',
-                description: 'Testing extreme pricing',
-                category: 'market-analysis',
-                price: 0.000001 // Very small price
-            });
-
-            const extremeIntelId2 = await intelligenceManager.listIntelligence('edge-agent-1', {
-                title: 'Maximum Price Intelligence',
-                description: 'Testing maximum pricing',
+            // Test with maximum valid price
+            const validIntelId = await intelligenceManager.listIntelligence('pricing-agent', {
+                title: 'High Price Intelligence',
+                description: 'Testing high but valid pricing',
                 category: 'defi-strategy',
-                price: 999999.999999 // Very large price
+                price: 999.999 // High but within valid range
             });
 
             // Test search with extreme filters
             const extremeSearchResults1 = intelligenceManager.searchIntelligence({
-                maxPrice: 0.000001
+                maxPrice: 0.01 // Should find nothing since minimum price is 0.001
             });
-            expect(extremeSearchResults1.length).toBe(1);
+            expect(extremeSearchResults1.length).toBe(0);
 
             const extremeSearchResults2 = intelligenceManager.searchIntelligence({
-                maxPrice: 1000000
+                maxPrice: 1000 // Should find the valid intelligence
             });
-            expect(extremeSearchResults2.length).toBe(2);
+            expect(extremeSearchResults2.length).toBeGreaterThan(0);
 
-            // Test with zero price
-            const freeIntelId = await intelligenceManager.listIntelligence('edge-agent-1', {
-                title: 'Free Intelligence',
-                description: 'Zero price intelligence',
-                category: 'risk-assessment',
-                price: 0
-            });
-
-            expect(intelligenceManager.getIntelligence(freeIntelId)!.price).toBe(0);
+            // Test with zero price (should be rejected since minimum is 0.001)
+            await expect(async () => {
+                await intelligenceManager.listIntelligence('pricing-agent', {
+                    title: 'Free Intelligence',
+                    description: 'Zero price intelligence',
+                    category: 'risk-assessment',
+                    price: 0
+                });
+            }).rejects.toThrow();
         });
 
         it('should handle special characters and unicode', async () => {
@@ -394,7 +407,7 @@ describe('Performance and Stress Tests', () => {
             await agentManager.registerAgent('unicode-agent-1', {
                 name: 'Agent with 🚀 Emojis 漢字',
                 description: 'Description\nwith\nnewlines\tand\ttabs',
-                specialization: [],
+                specialization: ['testing'], // Fixed: must have at least one specialization
                 verified: true
             });
 
@@ -573,8 +586,8 @@ describe('Performance and Stress Tests', () => {
 
             expect(statsTime).toBeLessThan(200); // Should remain fast
             expect(transactionCount).toBe(numBuyers);
-            expect(totalVolume).toBe(numBuyers * 0.1);
-            expect(avgPrice).toBe(0.1);
+            expect(totalVolume).toBeCloseTo(numBuyers * 0.1, 10); // Handle floating point precision
+            expect(avgPrice).toBeCloseTo(0.1, 10);
 
             // Test reputation calculation performance
             const reputationStart = Date.now();

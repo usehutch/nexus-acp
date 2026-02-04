@@ -1,5 +1,5 @@
 import type { Connection } from '@solana/web3.js';
-import type { AgentProfile, AgentIntelligence, SearchFilters, MarketStats, PurchaseResult } from './types/index.js';
+import type { AgentProfile, AgentIntelligence, SearchFilters, MarketStats, PurchaseResult, Rating } from './types/index.js';
 import { AgentManager } from './core/agent-manager.js';
 import { IntelligenceManager } from './core/intelligence-manager.js';
 import { TransactionManager } from './core/transaction-manager.js';
@@ -49,7 +49,7 @@ export class AgentMarketplace {
     }
 
     async rateIntelligence(buyerKey: string, intelligenceId: string, rating: number, review?: string): Promise<void> {
-        return this.transactionManager.rateIntelligence(buyerKey, intelligenceId, rating, review);
+        return this.transactionManager.rateIntelligence(buyerKey, intelligenceId, rating as Rating, review);
     }
 
     // Statistics

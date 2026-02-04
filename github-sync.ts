@@ -21,6 +21,30 @@ interface FileContent {
   encoding: 'utf-8' | 'base64';
 }
 
+interface GitHubRef {
+  object: {
+    sha: string;
+  };
+}
+
+interface GitHubCommit {
+  tree: {
+    sha: string;
+  };
+}
+
+interface GitHubBlob {
+  sha: string;
+}
+
+interface GitHubTree {
+  sha: string;
+}
+
+interface GitHubCommitResponse {
+  sha: string;
+}
+
 class GitHubSync {
   private config: GitHubConfig;
   private baseUrl = 'https://api.github.com';
@@ -127,11 +151,11 @@ class GitHubSync {
     console.log(`📁 Found ${files.length} files to sync`);
 
     // Get latest commit SHA
-    const branch = await this.makeRequest(`/repos/${this.config.owner}/${this.config.repo}/git/refs/heads/${this.config.branch}`);
+    const branch = await this.makeRequest(`/repos/${this.config.owner}/${this.config.repo}/git/refs/heads/${this.config.branch}`) as GitHubRef;
     const latestCommitSha = branch.object.sha;
 
     // Get the tree for the latest commit
-    const latestCommit = await this.makeRequest(`/repos/${this.config.owner}/${this.config.repo}/git/commits/${latestCommitSha}`);
+    const latestCommit = await this.makeRequest(`/repos/${this.config.owner}/${this.config.repo}/git/commits/${latestCommitSha}`) as GitHubCommit;
     const baseTreeSha = latestCommit.tree.sha;
 
     // Create blobs for all files
@@ -140,7 +164,7 @@ class GitHubSync {
       const blob = await this.makeRequest(`/repos/${this.config.owner}/${this.config.repo}/git/blobs`, 'POST', {
         content: file.content,
         encoding: file.encoding
-      });
+      }) as GitHubBlob;
 
       treeEntries.push({
         path: file.path,
@@ -154,14 +178,14 @@ class GitHubSync {
     const tree = await this.makeRequest(`/repos/${this.config.owner}/${this.config.repo}/git/trees`, 'POST', {
       base_tree: baseTreeSha,
       tree: treeEntries
-    });
+    }) as GitHubTree;
 
     // Create new commit
     const commit = await this.makeRequest(`/repos/${this.config.owner}/${this.config.repo}/git/commits`, 'POST', {
       message: commitMessage,
       tree: tree.sha,
       parents: [latestCommitSha]
-    });
+    }) as GitHubCommitResponse;
 
     // Update branch reference
     await this.makeRequest(`/repos/${this.config.owner}/${this.config.repo}/git/refs/heads/${this.config.branch}`, 'PATCH', {

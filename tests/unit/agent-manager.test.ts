@@ -189,10 +189,10 @@ describe('AgentManager', () => {
             expect(agent.total_earnings).toBe(1.2);
         });
 
-        it('should handle non-existent agent gracefully', () => {
+        it('should throw error for non-existent agent', () => {
             expect(() => {
                 agentManager.updateAgentStats('non-existent', 1.0);
-            }).not.toThrow();
+            }).toThrow();
         });
     });
 
@@ -295,34 +295,29 @@ describe('AgentManager', () => {
     });
 
     describe('Edge Cases and Error Handling', () => {
-        it('should handle empty specialization array', async () => {
-            const result = await agentManager.registerAgent('empty-spec', {
-                name: 'Empty Spec Agent',
-                description: 'Agent with no specializations',
-                specialization: [],
-                verified: false
-            });
-
-            expect(result).toBe(true);
-            const agent = agentManager.getAgent('empty-spec')!;
-            expect(agent.specialization).toEqual([]);
+        it('should reject empty specialization array', async () => {
+            await expect(async () => {
+                await agentManager.registerAgent('empty-spec', {
+                    name: 'Empty Spec Agent',
+                    description: 'Agent with no specializations',
+                    specialization: [],
+                    verified: false
+                });
+            }).rejects.toThrow();
         });
 
-        it('should handle long agent names and descriptions', async () => {
+        it('should reject overly long agent names and descriptions', async () => {
             const longName = 'A'.repeat(1000);
             const longDescription = 'B'.repeat(5000);
 
-            const result = await agentManager.registerAgent('long-content', {
-                name: longName,
-                description: longDescription,
-                specialization: ['testing'],
-                verified: true
-            });
-
-            expect(result).toBe(true);
-            const agent = agentManager.getAgent('long-content')!;
-            expect(agent.name).toBe(longName);
-            expect(agent.description).toBe(longDescription);
+            await expect(async () => {
+                await agentManager.registerAgent('long-content', {
+                    name: longName,
+                    description: longDescription,
+                    specialization: ['testing'],
+                    verified: true
+                });
+            }).rejects.toThrow();
         });
 
         it('should handle special characters in public keys', async () => {

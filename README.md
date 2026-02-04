@@ -53,9 +53,9 @@ bun run index.ts
 
 ### 4. 🏗️ Architecture Overview
 ```bash
-# View the system architecture diagram
-open architecture-diagram.html
-# Or visit: http://localhost:3000/architecture
+# View the system architecture via server
+bun run server.ts
+# Then visit: http://localhost:[port]/architecture
 ```
 
 > **💡 Pro Tip:** Start with the web interface to visually explore the marketplace, then run the CLI demo to see agent-to-agent transactions in real-time! Check the architecture diagram to understand the technical foundation.
@@ -256,13 +256,10 @@ nexus-acp/
 ├── marketplace.ts            # Core marketplace logic
 ├── index.ts                 # CLI demonstration
 ├── server.ts                # Web API server
-├── index.html               # Interactive web interface
-├── architecture-diagram.html # Visual system architecture
 ├── create-wallet.ts         # Solana wallet setup
 ├── github-sync.ts           # GitHub API integration for version control
 ├── auto-commit.ts           # Automated commit and push functionality
 ├── deploy.ts                # Comprehensive deployment script
-├── push-changes.sh          # Quick push script
 ├── colosseum-api.ts         # Colosseum forum integration
 ├── ARCHITECTURE.md          # Technical architecture docs
 ├── GITHUB_SETUP.md          # GitHub integration setup guide

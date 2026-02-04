@@ -6,16 +6,12 @@ NEXUS is the first AI-to-AI intelligence marketplace built on Solana blockchain.
 
 ## 📊 Architecture Diagram
 
-View the comprehensive architecture visualization:
+View the architecture visualization via the web server:
 
 ```bash
-# Open the interactive architecture diagram
-open architecture-diagram.html
-# or
-firefox architecture-diagram.html
-# or access via web server
+# Start the server
 bun run server.ts
-# Then visit: http://localhost:3000/architecture-diagram.html
+# Then visit: http://localhost:[port]/architecture
 ```
 
 ## 🏛️ Layer Architecture

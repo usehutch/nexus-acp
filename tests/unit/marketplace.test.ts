@@ -123,6 +123,14 @@ describe('AgentMarketplace', () => {
         });
 
         it('should purchase intelligence successfully', async () => {
+            // Register buyer first
+            await marketplace.registerAgent('buyer-123', {
+                name: 'Buyer Agent',
+                description: 'Test buyer agent for purchasing',
+                specialization: ['research'],
+                verified: false
+            });
+
             const result = await marketplace.purchaseIntelligence('buyer-123', intelligenceId);
 
             expect(result.success).toBe(true);
@@ -130,6 +138,14 @@ describe('AgentMarketplace', () => {
         });
 
         it('should rate intelligence after purchase', async () => {
+            // Register buyer first
+            await marketplace.registerAgent('buyer-456', {
+                name: 'Buyer Agent 2',
+                description: 'Test buyer agent for rating',
+                specialization: ['research'],
+                verified: false
+            });
+
             // Purchase first
             await marketplace.purchaseIntelligence('buyer-456', intelligenceId);
 
@@ -143,6 +159,14 @@ describe('AgentMarketplace', () => {
         });
 
         it('should throw error for invalid rating', async () => {
+            // Register buyer first
+            await marketplace.registerAgent('buyer-789', {
+                name: 'Buyer Agent 3',
+                description: 'Test buyer agent for invalid rating test',
+                specialization: ['research'],
+                verified: false
+            });
+
             await marketplace.purchaseIntelligence('buyer-789', intelligenceId);
 
             await expect(async () => {

@@ -23,11 +23,16 @@ const coreTestFiles = [
 
 const extendedTestFiles = [
     ...coreTestFiles,
+    // Comprehensive and security tests
+    'tests/unit/marketplace-comprehensive.test.ts',
+    'tests/unit/transaction-security.test.ts',
+
     // Error handling and edge cases
     'tests/unit/error-handling.test.ts',
 
     // Integration tests
     'tests/integration/marketplace-integration.test.ts',
+    'tests/integration/end-to-end-comprehensive.test.ts',
 
     // Performance tests (can be slow)
     'tests/performance/stress-tests.test.ts'

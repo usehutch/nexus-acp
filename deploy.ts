@@ -133,10 +133,13 @@ async function main() {
         break;
       case '-m':
       case '--message':
-        options.message = args[++i];
+        const nextIndex = ++i;
+        if (nextIndex < args.length) {
+          options.message = args[nextIndex];
+        }
         break;
       default:
-        if (!arg.startsWith('-')) {
+        if (arg && !arg.startsWith('-')) {
           positionalArgs.push(arg);
         }
     }

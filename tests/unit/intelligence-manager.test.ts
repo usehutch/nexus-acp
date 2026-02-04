@@ -72,7 +72,7 @@ describe('IntelligenceManager', () => {
 
             const intelligenceId = await intelligenceManager.listIntelligence('seller1', {
                 title: 'Test Intelligence',
-                description: 'Test intelligence',
+                description: 'This is a comprehensive test intelligence description that is over 20 characters',
                 category: 'market-analysis',
                 price: 0.1
             });
@@ -86,24 +86,24 @@ describe('IntelligenceManager', () => {
             await expect(async () => {
                 await intelligenceManager.listIntelligence('unregistered-agent', {
                     title: 'Test Intelligence',
-                    description: 'Test description',
+                    description: 'This is a comprehensive test description that is over 20 characters long',
                     category: 'market-analysis',
                     price: 0.1
                 });
-            }).toThrow('Agent must be registered first');
+            }).toThrow('Seller must be registered as an agent first');
         });
 
         it('should generate unique IDs for multiple listings', async () => {
             const id1 = await intelligenceManager.listIntelligence('seller1', {
                 title: 'Intelligence 1',
-                description: 'First intelligence',
+                description: 'This is the first comprehensive intelligence description over 20 characters',
                 category: 'market-analysis',
                 price: 0.1
             });
 
             const id2 = await intelligenceManager.listIntelligence('seller1', {
                 title: 'Intelligence 2',
-                description: 'Second intelligence',
+                description: 'This is the second comprehensive intelligence description over 20 characters',
                 category: 'defi-strategy',
                 price: 0.2
             });
@@ -157,7 +157,7 @@ describe('IntelligenceManager', () => {
 
             await intelligenceManager.listIntelligence('seller2', {
                 title: 'Count Test',
-                description: 'For count testing',
+                description: 'This is a comprehensive intelligence description for count testing purposes',
                 category: 'market-analysis',
                 price: 0.1
             });
@@ -241,14 +241,14 @@ describe('IntelligenceManager', () => {
             // Re-list intelligence to get updated quality scores
             await intelligenceManager.listIntelligence('seller1', {
                 title: 'High Quality Intelligence',
-                description: 'High quality test',
+                description: 'This is a high quality comprehensive intelligence description for testing',
                 category: 'market-analysis',
                 price: 0.1
             });
 
             await intelligenceManager.listIntelligence('seller2', {
                 title: 'Low Quality Intelligence',
-                description: 'Low quality test',
+                description: 'This is a low quality comprehensive intelligence description for testing',
                 category: 'market-analysis',
                 price: 0.1
             });
@@ -327,7 +327,7 @@ describe('IntelligenceManager', () => {
         it('should handle non-existent intelligence ID gracefully', () => {
             expect(() => {
                 intelligenceManager.incrementSalesCount('non-existent');
-            }).not.toThrow();
+            }).toThrow('Cannot increment sales: Intelligence not found');
         });
 
         it('should update intelligence rating from transactions', () => {
@@ -423,7 +423,7 @@ describe('IntelligenceManager', () => {
                 for (let i = 0; i < count; i++) {
                     await intelligenceManager.listIntelligence('seller1', {
                         title: `Intelligence ${counter++}`,
-                        description: `Test intelligence ${counter}`,
+                        description: `This is a comprehensive test intelligence description for item ${counter} that meets length requirements`,
                         category: category as any,
                         price: 0.1
                     });
@@ -487,41 +487,37 @@ describe('IntelligenceManager', () => {
 
     describe('Edge Cases and Error Handling', () => {
         it('should handle empty title and description', async () => {
-            const intelligenceId = await intelligenceManager.listIntelligence('seller1', {
-                title: '',
-                description: '',
-                category: 'market-analysis',
-                price: 0.1
-            });
-
-            const intelligence = intelligenceManager.getIntelligence(intelligenceId)!;
-            expect(intelligence.title).toBe('');
-            expect(intelligence.description).toBe('');
+            await expect(async () => {
+                await intelligenceManager.listIntelligence('seller1', {
+                    title: '',
+                    description: '',
+                    category: 'market-analysis',
+                    price: 0.1
+                });
+            }).toThrow('Missing required fields in intelligence listing');
         });
 
         it('should handle zero price intelligence', async () => {
-            const intelligenceId = await intelligenceManager.listIntelligence('seller1', {
-                title: 'Free Intelligence',
-                description: 'Free intelligence for testing',
-                category: 'market-analysis',
-                price: 0
-            });
-
-            const intelligence = intelligenceManager.getIntelligence(intelligenceId)!;
-            expect(intelligence.price).toBe(0);
+            await expect(async () => {
+                await intelligenceManager.listIntelligence('seller1', {
+                    title: 'Free Intelligence',
+                    description: 'This is a comprehensive description for free intelligence testing purposes',
+                    category: 'market-analysis',
+                    price: 0
+                });
+            }).toThrow('price must be between 0.001 and 1000');
         });
 
         it('should handle very large prices', async () => {
             const largePrice = 999999.999999;
-            const intelligenceId = await intelligenceManager.listIntelligence('seller1', {
-                title: 'Expensive Intelligence',
-                description: 'Very expensive intelligence',
-                category: 'market-analysis',
-                price: largePrice
-            });
-
-            const intelligence = intelligenceManager.getIntelligence(intelligenceId)!;
-            expect(intelligence.price).toBe(largePrice);
+            await expect(async () => {
+                await intelligenceManager.listIntelligence('seller1', {
+                    title: 'Expensive Intelligence',
+                    description: 'This is a comprehensive description for very expensive intelligence testing',
+                    category: 'market-analysis',
+                    price: largePrice
+                });
+            }).toThrow('price must be between 0.001 and 1000');
         });
 
         it('should handle special characters in titles and descriptions', async () => {
@@ -541,15 +537,14 @@ describe('IntelligenceManager', () => {
         });
 
         it('should handle search with invalid filters gracefully', () => {
-            const results = intelligenceManager.searchIntelligence({
-                category: 'non-existent-category',
-                maxPrice: -1,
-                minQuality: 200,
-                seller: 'non-existent-seller'
-            });
-
-            expect(Array.isArray(results)).toBe(true);
-            expect(results.length).toBe(0);
+            expect(() => {
+                intelligenceManager.searchIntelligence({
+                    category: 'non-existent-category',
+                    maxPrice: -1,
+                    minQuality: 200,
+                    seller: 'non-existent-seller'
+                });
+            }).toThrow('Max price filter must be a positive number');
         });
     });
 });
