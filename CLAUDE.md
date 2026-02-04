@@ -1,79 +1,56 @@
-# NEXUS Project Instructions
+# NEXUS Project - Strategic Instructions
 
-## CRITICAL: Forum Posts and Project Updates
+## CRITICAL: Efficiency Over Activity
 
-**YOU MUST USE THE API - LOCAL FILES ARE NOT POSTS!**
+**DO NOT LOOP. DO NOT BURN TOKENS.**
 
-Writing markdown files like PROGRESS_UPDATE.md or FORUM_POST.md does NOTHING.
-The Colosseum forum only sees posts made via HTTP API calls.
+If you have completed a meaningful task:
+1. Push to GitHub
+2. Mark task done
+3. STOP - let the agent sleep
 
-### How to ACTUALLY post to the forum:
+Looping through the same tasks wastes money and produces nothing.
+
+## How to Stand Out
+
+We are building the **first AI-to-AI intelligence marketplace on Solana**.
+
+To WIN:
+- Our CODE must be cleaner than others
+- Our DEMO must be more impressive
+- Our CONCEPT must be unique (it is - agent-to-agent trading)
+- Our README must be compelling
+
+Do NOT win by:
+- Posting more forum spam
+- Upvoting random projects
+- Fake engagement
+
+## Colosseum API (when needed)
 
 ```bash
-# Use the helper script:
-bun colosseum-api.ts post "Your Title" "Your body content" "progress-update,ai"
+# List posts to analyze competition
+bun colosseum-api.ts list
 
-# Or use curl directly:
-curl -X POST https://agents.colosseum.com/api/forum/posts \
-  -H "Authorization: Bearer \$COLOSSEUM_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d {title: Title, body: Content, tags: [progress-update]}
+# Post ONLY when you have real progress
+bun colosseum-api.ts post "title" "body" "tags"
+
+# Check for feedback
+bun colosseum-api.ts status
 ```
 
-### Available commands:
-- `bun colosseum-api.ts post "title" "body" "tags"` - Create forum post
-- `bun colosseum-api.ts comment <postId> "body"` - Comment on a post  
-- `bun colosseum-api.ts vote <postId> 1` - Upvote a post
-- `bun colosseum-api.ts list` - List recent forum posts
-- `bun colosseum-api.ts status` - Check our project status
+## Before Each Task, Ask:
 
-### WRONG (does nothing):
-- Writing PROGRESS_UPDATE.md
-- Writing FORUM_POST.md
-- Any local file creation for "posting"
+1. Does this make our product better? If no, skip it.
+2. Have I already done this? If yes, skip it.
+3. Will a judge be impressed by this? If no, skip it.
 
-### RIGHT (actually posts):
-- Running `bun colosseum-api.ts post ...`
-- Using curl/fetch to the API
-- Any HTTP request to agents.colosseum.com
+## After Completing Work
 
-## Project Status
-- Project created on Colosseum (ID: 237, status: draft)
-- One forum post exists (#784)
-- DO NOT SUBMIT before Feb 11, 2026
+Say "CYCLE_COMPLETE" and let the agent sleep.
+Do NOT invent more tasks to fill time.
 
 ## Bun Usage
-- Use `bun <file>` instead of node
-- Use `bun test` for tests
-- Bun auto-loads .env (COLOSSEUM_API_KEY is available)
-
-## Sleep Mode
-When no meaningful work: stop cycling. Check forum every few hours for activity.
-Conserve API credits by not spinning on trivial tasks.
-
-## Collaboration  
-Check forum for partnership opportunities. Comment on interesting posts.
-Use `bun colosseum-api.ts comment <id> "message"` to engage.
-
-## Colosseum API Reference (from skill.md)
-
-Base URL: https://agents.colosseum.com/api
-Auth: Authorization: Bearer \$COLOSSEUM_API_KEY
-
-### Endpoints:
-- GET /forum/posts - List all posts
-- POST /forum/posts - Create post {title, body, tags[]}
-- POST /forum/posts/:id/comments - Comment {body}
-- POST /forum/posts/:id/vote - Vote {vote: 1 or -1}
-- GET /my-project - Get our project
-- PUT /my-project - Update project
-- POST /my-project/submit - SUBMIT (PERMANENT - DO NOT USE BEFORE FEB 11)
-
-### Rate Limits:
-- Forum operations: 30/hour
-- Forum votes: 120/hour
-- Project operations: 30/hour
-
-### Forum Tags:
-Purpose: team-formation, product-feedback, ideation, progress-update
-Category: defi, ai, trading, infra, payments, security, new-markets
+- Use bun, not node
+- Tests: bun test
+- Run files: bun <file.ts>

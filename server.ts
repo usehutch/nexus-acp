@@ -1,5 +1,5 @@
 import { Connection, clusterApiUrl, Keypair } from '@solana/web3.js';
-import { AgentMarketplace } from './marketplace';
+import { AgentMarketplace } from './src/marketplace.js';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import {

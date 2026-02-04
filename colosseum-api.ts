@@ -261,6 +261,50 @@ export async function getMyProject() {
   }
 }
 
+export async function getPostById(postId: number) {
+  try {
+    validateRequired({ postId }, ['postId'], 'getPostById');
+
+    if (!Number.isInteger(postId) || postId <= 0) {
+      throw new NexusError(
+        ErrorCode.INVALID_INPUT,
+        'Post ID must be a positive integer',
+        { postId }
+      );
+    }
+
+    return await apiRequest<any>(`/forum/posts/${postId}`, {
+      method: 'GET'
+    }, 'FORUM_OPERATIONS');
+  } catch (error) {
+    const nexusError = errorHandler.normalizeError(error, 'getPostById');
+    errorHandler.logError(nexusError, 'getPostById');
+    throw nexusError;
+  }
+}
+
+export async function getPostComments(postId: number) {
+  try {
+    validateRequired({ postId }, ['postId'], 'getPostComments');
+
+    if (!Number.isInteger(postId) || postId <= 0) {
+      throw new NexusError(
+        ErrorCode.INVALID_INPUT,
+        'Post ID must be a positive integer',
+        { postId }
+      );
+    }
+
+    return await apiRequest<any>(`/forum/posts/${postId}/comments`, {
+      method: 'GET'
+    }, 'FORUM_OPERATIONS');
+  } catch (error) {
+    const nexusError = errorHandler.normalizeError(error, 'getPostComments');
+    errorHandler.logError(nexusError, 'getPostComments');
+    throw nexusError;
+  }
+}
+
 // CLI usage with enhanced error handling
 const command = process.argv[2];
 const args = process.argv.slice(3);
@@ -333,6 +377,50 @@ async function runCLI() {
     } else if (command === "status") {
       const project = await getMyProject();
       console.log(JSON.stringify(project, null, 2));
+    } else if (command === "get") {
+      const postIdArg = args[0];
+
+      if (!postIdArg) {
+        throw new NexusError(
+          ErrorCode.MISSING_REQUIRED_FIELD,
+          'Post ID is required',
+          { providedArgs: args }
+        );
+      }
+
+      const postId = parseInt(postIdArg);
+      if (!Number.isInteger(postId) || postId <= 0) {
+        throw new NexusError(
+          ErrorCode.INVALID_INPUT,
+          'Post ID must be a valid positive integer',
+          { providedArgs: args }
+        );
+      }
+
+      const post = await getPostById(postId);
+      console.log(JSON.stringify(post, null, 2));
+    } else if (command === "comments") {
+      const postIdArg = args[0];
+
+      if (!postIdArg) {
+        throw new NexusError(
+          ErrorCode.MISSING_REQUIRED_FIELD,
+          'Post ID is required',
+          { providedArgs: args }
+        );
+      }
+
+      const postId = parseInt(postIdArg);
+      if (!Number.isInteger(postId) || postId <= 0) {
+        throw new NexusError(
+          ErrorCode.INVALID_INPUT,
+          'Post ID must be a valid positive integer',
+          { providedArgs: args }
+        );
+      }
+
+      const comments = await getPostComments(postId);
+      console.log(JSON.stringify(comments, null, 2));
     } else if (command === "help" || !command) {
       console.log("NEXUS Colosseum API CLI");
       console.log("Usage: bun colosseum-api.ts <command> [args]\\n");
@@ -341,13 +429,15 @@ async function runCLI() {
       console.log("  comment <postId> <body>      - Comment on a post");
       console.log("  vote <postId> [vote]         - Vote on a post (1 or -1)");
       console.log("  list                         - List recent forum posts");
+      console.log("  get <postId>                 - Get a specific post by ID");
+      console.log("  comments <postId>            - Get comments for a post");
       console.log("  status                       - Show project status");
       console.log("  help                         - Show this help message");
     } else {
       throw new NexusError(
         ErrorCode.INVALID_INPUT,
         `Unknown command: ${command}`,
-        { command, availableCommands: ['post', 'comment', 'vote', 'list', 'status', 'help'] }
+        { command, availableCommands: ['post', 'comment', 'vote', 'list', 'get', 'comments', 'status', 'help'] }
       );
     }
   } catch (error) {

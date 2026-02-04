@@ -1,6 +1,9 @@
 import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import type { AgentIntelligence, AgentProfile, IntelligenceTransaction } from '../types/index.js';
 import { generateIntelligenceData } from '../utils/sample-data.js';
+import { PrivacyLayer } from './privacy-layer.js';
+import { AgentMemoryLayer } from './memory-layer.js';
+import { TransparencyLayer } from './transparency-layer.js';
 
 export class AgentMarketplace {
     private connection: Connection;
@@ -8,9 +11,25 @@ export class AgentMarketplace {
     private intelligence: Map<string, AgentIntelligence> = new Map();
     private transactions: IntelligenceTransaction[] = [];
 
+    // Enhanced layers based on community feedback
+    private privacyLayer: PrivacyLayer;
+    private memoryLayer: AgentMemoryLayer;
+    private transparencyLayer: TransparencyLayer;
+
     constructor(connection: Connection) {
         this.connection = connection;
+
+        // Initialize enhancement layers
+        this.privacyLayer = new PrivacyLayer(connection);
+        this.memoryLayer = new AgentMemoryLayer(connection);
+        this.transparencyLayer = new TransparencyLayer(connection);
+
         this.loadSampleData();
+
+        console.log(`🚀 NEXUS Enhanced Marketplace initialized with:`);
+        console.log(`   🛡️  MEV Protection (Sipher Protocol)`);
+        console.log(`   🧠 Agent Memory (AgentMemory Protocol)`);
+        console.log(`   🔍 Trade Transparency (SOLPRISM)`);
     }
 
     // Agent Registration
@@ -55,8 +74,8 @@ export class AgentMarketplace {
         return id;
     }
 
-    // Purchase Intelligence
-    async purchaseIntelligence(buyerKey: string, intelligenceId: string): Promise<{success: boolean, data?: any}> {
+    // Purchase Intelligence (Enhanced with Community Feedback)
+    async purchaseIntelligence(buyerKey: string, intelligenceId: string): Promise<{success: boolean, data?: any, transparency?: any, privacy?: any}> {
         const intelligence = this.intelligence.get(intelligenceId);
         if (!intelligence) {
             throw new Error('Intelligence not found');
@@ -67,28 +86,71 @@ export class AgentMarketplace {
             throw new Error('Seller not found');
         }
 
-        // Simulate payment (in real implementation, this would be a Solana transaction)
+        // 1. COMMIT REASONING (SOLPRISM Integration)
+        const reasoning = {
+            decision: 'buy' as const,
+            factors: [
+                `Quality score: ${intelligence.quality_score}/100`,
+                `Seller reputation: ${seller.reputation_score}/1000`,
+                `Price assessment: ${intelligence.price} SOL`,
+                `Category relevance: ${intelligence.category}`,
+                `Sales history: ${intelligence.sales_count} previous sales`
+            ],
+            confidence: Math.min(95, intelligence.quality_score + seller.reputation_score / 20),
+            expectedValue: intelligence.price * (intelligence.quality_score / 100),
+            riskAssessment: intelligence.price > 0.5 ? 'high value purchase' : 'low risk trade',
+            methodology: 'NEXUS automated quality assessment with reputation weighting'
+        };
+
+        const commitId = await this.transparencyLayer.commitReasoning(buyerKey, intelligenceId, reasoning);
+
+        // 2. SHIELD TRANSACTION (Sipher Integration)
+        const privacyResult = await this.privacyLayer.shieldTransaction({
+            amount: intelligence.price,
+            recipient: intelligence.seller,
+            memo: `NEXUS Intelligence: ${intelligence.title}`
+        });
+
+        // 3. EXECUTE TRANSACTION
         const transaction: IntelligenceTransaction = {
             id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             buyer: buyerKey,
             seller: intelligence.seller,
             intelligence_id: intelligenceId,
             price: intelligence.price,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            privacy_tx_id: privacyResult.transactionId,
+            transparency_commit_id: commitId
         };
 
-        // Update statistics
+        // 4. UPDATE STATISTICS
         intelligence.sales_count++;
         seller.total_sales++;
         seller.total_earnings += intelligence.price;
 
         this.transactions.push(transaction);
 
-        // Return the intelligence data (this would be encrypted/decrypted in production)
+        // 5. STORE IN AGENT MEMORY (AgentMemory Protocol Integration)
+        await this.memoryLayer.recordPurchase(transaction, intelligence);
+
+        // 6. REVEAL REASONING (SOLPRISM Integration)
+        await this.transparencyLayer.revealReasoning(commitId, reasoning, transaction.id);
+
+        // 7. RETURN INTELLIGENCE DATA
         const intelligenceData = generateIntelligenceData(intelligence.category);
 
-        console.log(`💰 Purchase completed: ${buyerKey.substr(0, 8)}... bought "${intelligence.title}" for ${intelligence.price} SOL`);
-        return { success: true, data: intelligenceData };
+        console.log(`💰 Enhanced Purchase Completed:`);
+        console.log(`   🛡️  Privacy: Transaction shielded via ${privacyResult.stealthAddress?.substr(0, 8)}...`);
+        console.log(`   🧠 Memory: Purchase recorded for future recommendations`);
+        console.log(`   🔍 Transparency: Reasoning committed and revealed`);
+        console.log(`   📦 Data: Intelligence delivered to buyer`);
+
+        return {
+            success: true,
+            data: intelligenceData,
+            transparency: { commitId, reasoning },
+            privacy: privacyResult
+        };
     }
 
     // Rate Intelligence After Purchase
@@ -171,7 +233,7 @@ export class AgentMarketplace {
             .slice(0, limit);
     }
 
-    // Market Statistics
+    // Market Statistics (Enhanced)
     getMarketStats() {
         const totalIntelligence = this.intelligence.size;
         const totalAgents = this.agents.size;
@@ -183,13 +245,139 @@ export class AgentMarketplace {
             return acc;
         }, {} as Record<string, number>);
 
+        // Enhanced stats with new layers
+        const privacyStats = this.privacyLayer.getPrivacyStatus();
+        const memoryStats = this.memoryLayer.getMemoryStatus();
+        const transparencyStats = this.transparencyLayer.getTransparencyStats();
+
         return {
             totalIntelligence,
             totalAgents,
             totalTransactions,
             totalVolume,
             avgPrice: totalTransactions > 0 ? totalVolume / totalTransactions : 0,
-            categories
+            categories,
+            enhancements: {
+                privacy: privacyStats,
+                memory: memoryStats,
+                transparency: {
+                    ...transparencyStats,
+                    rate: transparencyStats.transparency_rate
+                }
+            }
+        };
+    }
+
+    // ENHANCED METHODS BASED ON COMMUNITY FEEDBACK
+
+    /**
+     * Get agent recommendations based on memory analysis (AgentMemory Protocol)
+     */
+    async getAgentRecommendations(agentId: string, category?: string): Promise<{
+        recommended: string[];
+        patterns: any;
+        insights: string[];
+    }> {
+        const recommendations = await this.memoryLayer.getRecommendations(agentId, category);
+        const patterns = await this.memoryLayer.analyzePatterns(agentId);
+
+        return {
+            recommended: recommendations.recommended,
+            patterns,
+            insights: patterns.insights
+        };
+    }
+
+    /**
+     * Audit agent transparency and decision-making (SOLPRISM Integration)
+     */
+    async auditAgentTransparency(agentId: string): Promise<{
+        transparency_score: number;
+        audit_report: string[];
+        decision_patterns: any;
+    }> {
+        const audit = await this.transparencyLayer.auditAgent(agentId);
+        return {
+            transparency_score: audit.transparency_score,
+            audit_report: audit.audit_report,
+            decision_patterns: audit.decision_patterns
+        };
+    }
+
+    /**
+     * Get comprehensive agent analytics (All Layers)
+     */
+    async getAgentAnalytics(agentId: string): Promise<{
+        memory: any;
+        transparency: any;
+        reputation: any;
+        trading_profile: any;
+    }> {
+        const memoryProfile = await this.memoryLayer.getAgentProfile(agentId);
+        const transparencyAudit = await this.transparencyLayer.auditAgent(agentId);
+        const agent = this.agents.get(agentId);
+
+        const agentTransactions = this.transactions.filter(tx =>
+            tx.buyer === agentId || tx.seller === agentId
+        );
+
+        return {
+            memory: memoryProfile,
+            transparency: transparencyAudit,
+            reputation: {
+                score: agent?.reputation_score || 0,
+                total_sales: agent?.total_sales || 0,
+                total_earnings: agent?.total_earnings || 0
+            },
+            trading_profile: {
+                total_transactions: agentTransactions.length,
+                avg_transaction_size: agentTransactions.length > 0 ?
+                    agentTransactions.reduce((sum, tx) => sum + tx.price, 0) / agentTransactions.length : 0,
+                categories_active: [...new Set(agentTransactions.map(tx =>
+                    this.intelligence.get(tx.intelligence_id)?.category
+                ).filter(Boolean))]
+            }
+        };
+    }
+
+    /**
+     * Verify transaction integrity across all layers
+     */
+    async verifyTransaction(transactionId: string): Promise<{
+        verified: boolean;
+        privacy_check: any;
+        transparency_check: any;
+        memory_record: any;
+    }> {
+        const transaction = this.transactions.find(tx => tx.id === transactionId);
+        if (!transaction) {
+            return {
+                verified: false,
+                privacy_check: { error: 'Transaction not found' },
+                transparency_check: { error: 'Transaction not found' },
+                memory_record: { error: 'Transaction not found' }
+            };
+        }
+
+        const privacy_check = transaction.privacy_tx_id ?
+            await this.privacyLayer.verifyShielding(transaction.privacy_tx_id) : false;
+
+        const transparency_check = transaction.transparency_commit_id ?
+            await this.transparencyLayer.verifyTransaction(transaction.transparency_commit_id) :
+            { verified: false, error: 'No transparency commit' };
+
+        const memory_record = await this.memoryLayer.searchMemories({
+            agentId: transaction.buyer,
+            type: 'purchase'
+        });
+
+        return {
+            verified: privacy_check && transparency_check.verified,
+            privacy_check: { shielded: privacy_check },
+            transparency_check,
+            memory_record: memory_record.find(record =>
+                record.content.transaction?.id === transactionId
+            )
         };
     }
 

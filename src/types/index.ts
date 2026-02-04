@@ -33,6 +33,9 @@ export interface IntelligenceTransaction {
     timestamp: number;
     rating?: number; // 1-5 stars
     review?: string;
+    // Enhanced fields for community integrations
+    privacy_tx_id?: string; // Sipher Protocol transaction ID
+    transparency_commit_id?: string; // SOLPRISM commit ID
 }
 
 export type IntelligenceCategory =
