@@ -2,45 +2,137 @@ import { Connection, clusterApiUrl, Keypair } from '@solana/web3.js';
 import { AgentMarketplace } from './marketplace';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import {
+  ErrorCode,
+  NexusError,
+  errorHandler,
+  withRetry,
+  validateRequired
+} from './error-handler.js';
 
 // NEXUS Agent Intelligence Marketplace
 // First AI-to-AI knowledge trading platform on Solana
 
 async function main() {
-    console.log('🚀 NEXUS Agent Intelligence Marketplace');
-    console.log('=====================================\n');
+    try {
+        console.log('🚀 NEXUS Agent Intelligence Marketplace');
+        console.log('=====================================\n');
 
-    // Connect to Solana Devnet
-    const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
-    console.log('🌐 Connected to Solana Devnet');
+        // Connect to Solana Devnet with error handling
+        const connection = await withRetry(async () => {
+            const conn = new Connection(clusterApiUrl('devnet'), 'confirmed');
 
-    // Load wallet if exists
-    const walletPath = join(process.cwd(), 'wallet', 'devnet-wallet.json');
-    let wallet: any = null;
+            // Test the connection
+            await conn.getVersion();
+            return conn;
+        }, 'Solana connection', { maxRetries: 3 });
 
-    if (existsSync(walletPath)) {
-        const walletData = JSON.parse(readFileSync(walletPath, 'utf-8'));
-        wallet = Keypair.fromSecretKey(new Uint8Array(walletData.secretKey));
-        console.log('💼 Loaded wallet:', wallet.publicKey.toString());
+        console.log('🌐 Connected to Solana Devnet');
 
-        // Check balance
-        const balance = await connection.getBalance(wallet.publicKey);
-        console.log('💰 Wallet balance:', balance / 1e9, 'SOL\n');
-    } else {
-        console.log('⚠️ No wallet found. Run: bun run create-wallet.ts\n');
+        // Load wallet if exists with error handling
+        const wallet = await loadWallet();
+
+        if (wallet) {
+            // Check balance with error handling
+            const balance = await withRetry(async () => {
+                return await connection.getBalance(wallet.publicKey);
+            }, 'balance check', { maxRetries: 2 });
+
+            console.log('💰 Wallet balance:', balance / 1e9, 'SOL\n');
+        } else {
+            console.log('⚠️ No wallet found. Run: bun run create-wallet.ts\n');
+        }
+
+        // Initialize marketplace with error handling
+        const marketplace = new AgentMarketplace(connection);
+        console.log('🏪 Agent Intelligence Marketplace initialized\n');
+
+        // Demo the marketplace functionality
+        await demonstrateMarketplace(marketplace, wallet);
+
+    } catch (error) {
+        const nexusError = errorHandler.normalizeError(error, 'main');
+        errorHandler.logError(nexusError, 'main');
+
+        console.error('❌ Application failed to start:', nexusError.message);
+
+        if (nexusError.code === ErrorCode.SOLANA_CONNECTION_FAILED) {
+            console.error('💡 Check your internet connection and try again');
+        } else if (nexusError.code === ErrorCode.FILE_READ_ERROR) {
+            console.error('💡 Wallet file may be corrupted. Try recreating it.');
+        }
+
+        process.exit(1);
     }
+}
 
-    // Initialize marketplace
-    const marketplace = new AgentMarketplace(connection);
-    console.log('🏪 Agent Intelligence Marketplace initialized\n');
+async function loadWallet(): Promise<Keypair | null> {
+    try {
+        const walletPath = join(process.cwd(), 'wallet', 'devnet-wallet.json');
 
-    // Demo the marketplace functionality
-    await demonstrateMarketplace(marketplace, wallet);
+        if (!existsSync(walletPath)) {
+            return null;
+        }
+
+        const walletData = await withRetry(async () => {
+            try {
+                const fileContent = readFileSync(walletPath, 'utf-8');
+                return JSON.parse(fileContent);
+            } catch (error) {
+                if (error instanceof Error) {
+                    if (error.message.includes('ENOENT')) {
+                        throw new NexusError(
+                            ErrorCode.FILE_NOT_FOUND,
+                            'Wallet file not found',
+                            { walletPath },
+                            false
+                        );
+                    } else if (error.message.includes('JSON')) {
+                        throw new NexusError(
+                            ErrorCode.INVALID_FORMAT,
+                            'Wallet file is not valid JSON',
+                            { walletPath, error: error.message },
+                            false
+                        );
+                    }
+                }
+                throw error;
+            }
+        }, 'wallet file loading');
+
+        if (!walletData.secretKey || !Array.isArray(walletData.secretKey)) {
+            throw new NexusError(
+                ErrorCode.INVALID_FORMAT,
+                'Wallet file format is invalid',
+                { walletPath, hasSecretKey: !!walletData.secretKey },
+                false
+            );
+        }
+
+        const wallet = Keypair.fromSecretKey(new Uint8Array(walletData.secretKey));
+        console.log('💼 Loaded wallet:', wallet.publicKey.toString());
+        return wallet;
+
+    } catch (error) {
+        const nexusError = errorHandler.normalizeError(error, 'loadWallet');
+        errorHandler.logError(nexusError, 'loadWallet');
+        throw nexusError;
+    }
 }
 
 async function demonstrateMarketplace(marketplace: AgentMarketplace, wallet: Keypair | null) {
     console.log('🎯 === MARKETPLACE DEMONSTRATION ===\n');
 
+    try {
+        await runMarketplaceDemo(marketplace, wallet);
+    } catch (error) {
+        const nexusError = errorHandler.normalizeError(error, 'demonstrateMarketplace');
+        errorHandler.logError(nexusError, 'demonstrateMarketplace');
+        console.error('❌ Marketplace demo failed:', nexusError.message);
+    }
+}
+
+async function runMarketplaceDemo(marketplace: AgentMarketplace, wallet: Keypair | null) {
     try {
         // 1. Show market statistics
         console.log('📊 Market Statistics:');
@@ -69,10 +161,12 @@ async function demonstrateMarketplace(marketplace: AgentMarketplace, wallet: Key
 
             if (targetIntelligence) {
                 try {
-                    const purchase = await marketplace.purchaseIntelligence(
-                        wallet.publicKey.toString(),
-                        targetIntelligence.id
-                    );
+                    const purchase = await withRetry(async () => {
+                        return await marketplace.purchaseIntelligence(
+                            wallet.publicKey.toString(),
+                            targetIntelligence.id
+                        );
+                    }, 'purchase intelligence', { maxRetries: 2 });
 
                     if (purchase.success) {
                         console.log('✅ Purchase successful!');
@@ -82,39 +176,53 @@ async function demonstrateMarketplace(marketplace: AgentMarketplace, wallet: Key
 
                         // Rate the intelligence
                         console.log('⭐ Rating the intelligence...');
-                        await marketplace.rateIntelligence(
-                            wallet.publicKey.toString(),
-                            targetIntelligence.id,
-                            5,
-                            'Excellent analysis, very helpful!'
-                        );
+                        await withRetry(async () => {
+                            await marketplace.rateIntelligence(
+                                wallet.publicKey.toString(),
+                                targetIntelligence.id,
+                                5,
+                                'Excellent analysis, very helpful!'
+                            );
+                        }, 'rate intelligence');
                         console.log('✅ Rating submitted!\n');
                     }
                 } catch (error) {
-                    console.log('❌ Purchase failed:', error);
+                    const nexusError = errorHandler.normalizeError(error, 'purchase operation');
+                    console.log('❌ Purchase failed:', nexusError.message);
+                    errorHandler.logError(nexusError, 'purchase operation');
                 }
             }
         }
 
         // 4. Register our wallet as an agent
         if (wallet) {
-            console.log('🤖 Registering as agent...');
-            await marketplace.registerAgent(wallet.publicKey.toString(), {
-                name: 'NEXUS Intelligence Agent',
-                description: 'Advanced AI agent specializing in market analysis and strategic insights',
-                specialization: ['market-analysis', 'defi-strategy', 'trend-analysis'],
-                verified: false
-            });
+            try {
+                console.log('🤖 Registering as agent...');
+                await withRetry(async () => {
+                    await marketplace.registerAgent(wallet.publicKey.toString(), {
+                        name: 'NEXUS Intelligence Agent',
+                        description: 'Advanced AI agent specializing in market analysis and strategic insights',
+                        specialization: ['market-analysis', 'defi-strategy', 'trend-analysis'],
+                        verified: false
+                    });
+                }, 'agent registration');
 
-            // List our own intelligence
-            console.log('📋 Listing intelligence for sale...');
-            const intelligenceId = await marketplace.listIntelligence(wallet.publicKey.toString(), {
-                title: 'Solana Ecosystem Growth Analysis',
-                description: 'Comprehensive analysis of Solana DeFi protocols and growth opportunities',
-                category: 'market-analysis',
-                price: 0.25
-            });
-            console.log(`✅ Intelligence listed with ID: ${intelligenceId}\n`);
+                // List our own intelligence
+                console.log('📋 Listing intelligence for sale...');
+                const intelligenceId = await withRetry(async () => {
+                    return await marketplace.listIntelligence(wallet.publicKey.toString(), {
+                        title: 'Solana Ecosystem Growth Analysis',
+                        description: 'Comprehensive analysis of Solana DeFi protocols and growth opportunities',
+                        category: 'market-analysis',
+                        price: 0.25
+                    });
+                }, 'intelligence listing');
+                console.log(`✅ Intelligence listed with ID: ${intelligenceId}\n`);
+            } catch (error) {
+                const nexusError = errorHandler.normalizeError(error, 'agent operations');
+                console.log('❌ Agent operations failed:', nexusError.message);
+                errorHandler.logError(nexusError, 'agent operations');
+            }
         }
 
         // 5. Show top agents

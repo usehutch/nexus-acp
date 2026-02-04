@@ -1,6 +1,5 @@
 import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { NexusError, ErrorCode, errorHandler, validateRequired } from './error-handler';
 
 // Types for our marketplace
 export interface AgentIntelligence {
@@ -39,6 +38,27 @@ export interface IntelligenceTransaction {
     review?: string;
 }
 
+export interface MarketSearchFilters {
+    category?: string;
+    maxPrice?: number;
+    minQuality?: number;
+    seller?: string;
+}
+
+export interface MarketStats {
+    totalIntelligence: number;
+    totalAgents: number;
+    totalTransactions: number;
+    totalVolume: number;
+    avgPrice: number;
+    categories: Record<string, number>;
+}
+
+export interface PurchaseResult {
+    success: boolean;
+    data?: any;
+}
+
 export class AgentMarketplace {
     private connection: Connection;
     private agents: Map<string, AgentProfile> = new Map();
@@ -52,120 +72,272 @@ export class AgentMarketplace {
 
     // Agent Registration
     async registerAgent(publicKey: string, profile: Omit<AgentProfile, 'public_key' | 'created_at' | 'total_sales' | 'total_earnings' | 'reputation_score'>): Promise<boolean> {
-        const agentProfile: AgentProfile = {
-            ...profile,
-            public_key: publicKey,
-            reputation_score: 100, // Starting reputation
-            total_sales: 0,
-            total_earnings: 0,
-            created_at: Date.now()
-        };
+        return errorHandler.withErrorHandling(async () => {
+            // Validate required fields
+            validateRequired({ publicKey, name: profile.name, description: profile.description },
+                ['publicKey', 'name', 'description'], 'registerAgent');
 
-        this.agents.set(publicKey, agentProfile);
-        console.log(`✅ Agent registered: ${profile.name} (${publicKey})`);
-        return true;
+            // Validate public key format (basic validation)
+            if (typeof publicKey !== 'string' || publicKey.length < 32 || publicKey.length > 44) {
+                throw new NexusError(
+                    ErrorCode.INVALID_INPUT,
+                    'Invalid public key format',
+                    { publicKey }
+                );
+            }
+
+            // Validate specialization
+            if (!Array.isArray(profile.specialization) || profile.specialization.length === 0) {
+                throw new NexusError(
+                    ErrorCode.INVALID_INPUT,
+                    'Specialization must be a non-empty array',
+                    { specialization: profile.specialization }
+                );
+            }
+
+            // Check if agent already exists
+            if (this.agents.has(publicKey)) {
+                throw new NexusError(
+                    ErrorCode.AGENT_NOT_REGISTERED, // Reusing closest available code
+                    `Agent with public key ${publicKey} is already registered`,
+                    { publicKey }
+                );
+            }
+
+            const agentProfile: AgentProfile = {
+                ...profile,
+                public_key: publicKey,
+                reputation_score: 100, // Starting reputation
+                total_sales: 0,
+                total_earnings: 0,
+                created_at: Date.now()
+            };
+
+            this.agents.set(publicKey, agentProfile);
+            console.log(`✅ Agent registered: ${profile.name} (${publicKey})`);
+            return true;
+        }, 'agent registration');
     }
 
     // List Intelligence for Sale
     async listIntelligence(sellerKey: string, intelligence: Omit<AgentIntelligence, 'id' | 'seller' | 'created_at' | 'sales_count' | 'rating' | 'quality_score'>): Promise<string> {
-        if (!this.agents.has(sellerKey)) {
-            throw new Error('Agent must be registered first');
-        }
+        return errorHandler.withErrorHandling(async () => {
+            // Validate required fields
+            validateRequired({
+                sellerKey,
+                title: intelligence.title,
+                description: intelligence.description,
+                category: intelligence.category,
+                price: intelligence.price
+            }, ['sellerKey', 'title', 'description', 'category', 'price'], 'listIntelligence');
 
-        const id = `intel_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        // Quality score based on seller's reputation
-        const seller = this.agents.get(sellerKey)!;
-        const quality_score = Math.min(100, seller.reputation_score / 10);
+            // Validate public key format
+            if (typeof sellerKey !== 'string' || sellerKey.length < 32 || sellerKey.length > 44) {
+                throw new NexusError(
+                    ErrorCode.INVALID_INPUT,
+                    'Invalid seller key format',
+                    { sellerKey }
+                );
+            }
 
-        const fullIntelligence: AgentIntelligence = {
-            ...intelligence,
-            id,
-            seller: sellerKey,
-            quality_score,
-            created_at: Date.now(),
-            sales_count: 0,
-            rating: 0
-        };
+            // Validate category
+            const validCategories = ['market-analysis', 'defi-strategy', 'price-prediction', 'risk-assessment', 'trend-analysis'];
+            if (!validCategories.includes(intelligence.category)) {
+                throw new NexusError(
+                    ErrorCode.INVALID_INPUT,
+                    `Invalid category. Must be one of: ${validCategories.join(', ')}`,
+                    { category: intelligence.category, validCategories }
+                );
+            }
 
-        this.intelligence.set(id, fullIntelligence);
-        console.log(`📊 Intelligence listed: ${intelligence.title} for ${intelligence.price} SOL`);
-        return id;
+            // Validate price
+            if (typeof intelligence.price !== 'number' || intelligence.price <= 0 || intelligence.price > 1000) {
+                throw new NexusError(
+                    ErrorCode.INVALID_INPUT,
+                    'Price must be a positive number between 0 and 1000 SOL',
+                    { price: intelligence.price }
+                );
+            }
+
+            // Check if seller is registered
+            if (!this.agents.has(sellerKey)) {
+                throw new NexusError(
+                    ErrorCode.AGENT_NOT_REGISTERED,
+                    'Agent must be registered before listing intelligence',
+                    { sellerKey }
+                );
+            }
+
+            const id = `intel_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            // Quality score based on seller's reputation
+            const seller = this.agents.get(sellerKey)!;
+            const quality_score = Math.min(100, seller.reputation_score / 10);
+
+            const fullIntelligence: AgentIntelligence = {
+                ...intelligence,
+                id,
+                seller: sellerKey,
+                quality_score,
+                created_at: Date.now(),
+                sales_count: 0,
+                rating: 0
+            };
+
+            this.intelligence.set(id, fullIntelligence);
+            console.log(`📊 Intelligence listed: ${intelligence.title} for ${intelligence.price} SOL`);
+            return id;
+        }, 'intelligence listing');
     }
 
     // Purchase Intelligence
     async purchaseIntelligence(buyerKey: string, intelligenceId: string): Promise<{success: boolean, data?: any}> {
-        const intelligence = this.intelligence.get(intelligenceId);
-        if (!intelligence) {
-            throw new Error('Intelligence not found');
-        }
+        return errorHandler.withErrorHandling(async () => {
+            // Validate required fields
+            validateRequired({ buyerKey, intelligenceId }, ['buyerKey', 'intelligenceId'], 'purchaseIntelligence');
 
-        const seller = this.agents.get(intelligence.seller);
-        if (!seller) {
-            throw new Error('Seller not found');
-        }
+            // Validate buyer key format
+            if (typeof buyerKey !== 'string' || buyerKey.length < 32 || buyerKey.length > 44) {
+                throw new NexusError(
+                    ErrorCode.INVALID_INPUT,
+                    'Invalid buyer key format',
+                    { buyerKey }
+                );
+            }
 
-        // Simulate payment (in real implementation, this would be a Solana transaction)
-        const transaction: IntelligenceTransaction = {
-            id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            buyer: buyerKey,
-            seller: intelligence.seller,
-            intelligence_id: intelligenceId,
-            price: intelligence.price,
-            timestamp: Date.now()
-        };
+            // Check if intelligence exists
+            const intelligence = this.intelligence.get(intelligenceId);
+            if (!intelligence) {
+                throw new NexusError(
+                    ErrorCode.INTELLIGENCE_NOT_FOUND,
+                    `Intelligence not found with ID: ${intelligenceId}`,
+                    { intelligenceId }
+                );
+            }
 
-        // Update statistics
-        intelligence.sales_count++;
-        seller.total_sales++;
-        seller.total_earnings += intelligence.price;
+            // Check if seller still exists
+            const seller = this.agents.get(intelligence.seller);
+            if (!seller) {
+                throw new NexusError(
+                    ErrorCode.AGENT_NOT_REGISTERED,
+                    'Seller agent not found',
+                    { sellerKey: intelligence.seller }
+                );
+            }
 
-        this.transactions.push(transaction);
+            // Prevent self-purchase
+            if (buyerKey === intelligence.seller) {
+                throw new NexusError(
+                    ErrorCode.INVALID_TRANSACTION,
+                    'Cannot purchase your own intelligence',
+                    { buyerKey, sellerKey: intelligence.seller }
+                );
+            }
 
-        // Return the intelligence data (this would be encrypted/decrypted in production)
-        const intelligenceData = this.generateSampleIntelligenceData(intelligence);
+            // Simulate payment (in real implementation, this would be a Solana transaction)
+            const transaction: IntelligenceTransaction = {
+                id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                buyer: buyerKey,
+                seller: intelligence.seller,
+                intelligence_id: intelligenceId,
+                price: intelligence.price,
+                timestamp: Date.now()
+            };
 
-        console.log(`💰 Purchase completed: ${buyerKey.substr(0, 8)}... bought "${intelligence.title}" for ${intelligence.price} SOL`);
-        return { success: true, data: intelligenceData };
+            // Update statistics
+            intelligence.sales_count++;
+            seller.total_sales++;
+            seller.total_earnings += intelligence.price;
+
+            this.transactions.push(transaction);
+
+            // Return the intelligence data (this would be encrypted/decrypted in production)
+            const intelligenceData = this.generateSampleIntelligenceData(intelligence);
+
+            console.log(`💰 Purchase completed: ${buyerKey.substr(0, 8)}... bought "${intelligence.title}" for ${intelligence.price} SOL`);
+            return { success: true, data: intelligenceData };
+        }, 'intelligence purchase');
     }
 
     // Rate Intelligence After Purchase
     async rateIntelligence(buyerKey: string, intelligenceId: string, rating: number, review?: string): Promise<void> {
-        if (rating < 1 || rating > 5) {
-            throw new Error('Rating must be between 1 and 5');
-        }
+        return errorHandler.withErrorHandling(async () => {
+            // Validate required fields
+            validateRequired({ buyerKey, intelligenceId, rating }, ['buyerKey', 'intelligenceId', 'rating'], 'rateIntelligence');
 
-        // Find the transaction
-        const transaction = this.transactions.find(tx =>
-            tx.buyer === buyerKey && tx.intelligence_id === intelligenceId && !tx.rating
-        );
+            // Validate buyer key format
+            if (typeof buyerKey !== 'string' || buyerKey.length < 32 || buyerKey.length > 44) {
+                throw new NexusError(
+                    ErrorCode.INVALID_INPUT,
+                    'Invalid buyer key format',
+                    { buyerKey }
+                );
+            }
 
-        if (!transaction) {
-            throw new Error('Transaction not found or already rated');
-        }
+            // Validate rating range
+            errorHandler.validateRange(rating, 1, 5, 'rating', 'rateIntelligence');
+            if (!Number.isInteger(rating)) {
+                throw new NexusError(
+                    ErrorCode.INVALID_INPUT,
+                    'Rating must be an integer between 1 and 5',
+                    { rating }
+                );
+            }
 
-        transaction.rating = rating;
-        transaction.review = review;
+            // Find the transaction
+            const transaction = this.transactions.find(tx =>
+                tx.buyer === buyerKey && tx.intelligence_id === intelligenceId && !tx.rating
+            );
 
-        // Update intelligence rating
-        const intelligence = this.intelligence.get(intelligenceId)!;
-        const allRatings = this.transactions
-            .filter(tx => tx.intelligence_id === intelligenceId && tx.rating)
-            .map(tx => tx.rating!);
+            if (!transaction) {
+                throw new NexusError(
+                    ErrorCode.INVALID_TRANSACTION,
+                    'Transaction not found or already rated',
+                    { buyerKey, intelligenceId }
+                );
+            }
 
-        intelligence.rating = allRatings.reduce((a, b) => a + b, 0) / allRatings.length;
+            // Verify intelligence still exists
+            const intelligence = this.intelligence.get(intelligenceId);
+            if (!intelligence) {
+                throw new NexusError(
+                    ErrorCode.INTELLIGENCE_NOT_FOUND,
+                    `Intelligence not found with ID: ${intelligenceId}`,
+                    { intelligenceId }
+                );
+            }
 
-        // Update seller reputation
-        const seller = this.agents.get(intelligence.seller)!;
-        const sellerRatings = this.transactions
-            .filter(tx => tx.seller === intelligence.seller && tx.rating)
-            .map(tx => tx.rating!);
+            // Verify seller still exists
+            const seller = this.agents.get(intelligence.seller);
+            if (!seller) {
+                throw new NexusError(
+                    ErrorCode.AGENT_NOT_REGISTERED,
+                    'Seller agent not found',
+                    { sellerKey: intelligence.seller }
+                );
+            }
 
-        if (sellerRatings.length > 0) {
-            const avgRating = sellerRatings.reduce((a, b) => a + b, 0) / sellerRatings.length;
-            seller.reputation_score = Math.round((avgRating / 5) * 1000);
-        }
+            transaction.rating = rating;
+            transaction.review = review;
 
-        console.log(`⭐ Intelligence rated: ${rating}/5 stars`);
+            // Update intelligence rating
+            const allRatings = this.transactions
+                .filter(tx => tx.intelligence_id === intelligenceId && tx.rating)
+                .map(tx => tx.rating!);
+
+            intelligence.rating = allRatings.reduce((a, b) => a + b, 0) / allRatings.length;
+
+            // Update seller reputation
+            const sellerRatings = this.transactions
+                .filter(tx => tx.seller === intelligence.seller && tx.rating)
+                .map(tx => tx.rating!);
+
+            if (sellerRatings.length > 0) {
+                const avgRating = sellerRatings.reduce((a, b) => a + b, 0) / sellerRatings.length;
+                seller.reputation_score = Math.round((avgRating / 5) * 1000);
+            }
+
+            console.log(`⭐ Intelligence rated: ${rating}/5 stars`);
+        }, 'intelligence rating');
     }
 
     // Discovery and Search
@@ -232,44 +404,7 @@ export class AgentMarketplace {
 
     // Helper to generate sample intelligence data
     private generateSampleIntelligenceData(intelligence: AgentIntelligence): any {
-        const samples: Record<string, any> = {
-            'market-analysis': {
-                data: `SOL Price Analysis - ${new Date().toISOString()}`,
-                prediction: `Bullish trend expected over next 24h based on volume patterns`,
-                confidence: 0.85,
-                timeframe: '24h',
-                key_indicators: ['Volume surge +45%', 'RSI oversold recovery', 'Whale accumulation detected']
-            },
-            'defi-strategy': {
-                strategy: 'Yield farming optimization',
-                pools: ['SOL-USDC', 'RAY-SOL', 'ORCA-USDC'],
-                expected_apy: '12.5%',
-                risk_level: 'Medium',
-                instructions: 'Rotate between pools based on TVL changes'
-            },
-            'price-prediction': {
-                asset: 'SOL',
-                current_price: 98.5,
-                predicted_price_24h: 105.2,
-                predicted_price_7d: 115.8,
-                confidence_24h: 0.78,
-                confidence_7d: 0.65
-            },
-            'risk-assessment': {
-                asset: 'SOL',
-                risk_score: 6.5,
-                factors: ['Market volatility', 'Liquidity risk', 'Smart contract risk'],
-                recommendation: 'Medium risk - suitable for balanced portfolios'
-            },
-            'trend-analysis': {
-                trend: 'Bullish',
-                duration: '7 days',
-                strength: 0.78,
-                indicators: ['Moving averages', 'Volume profile', 'Social sentiment']
-            }
-        };
-
-        return samples[intelligence.category] || { generic_data: 'Intelligence data payload' };
+        return generateIntelligenceData(intelligence);
     }
 
     // Load sample data for demo
@@ -304,4 +439,46 @@ export class AgentMarketplace {
             price: 0.1
         });
     }
+}
+
+// Utility functions
+export function generateIntelligenceData(intelligence: AgentIntelligence): any {
+    const samples: Record<string, any> = {
+        'market-analysis': {
+            data: `SOL Price Analysis - ${new Date().toISOString()}`,
+            prediction: `Bullish trend expected over next 24h based on volume patterns`,
+            confidence: 0.85,
+            timeframe: '24h',
+            key_indicators: ['Volume surge +45%', 'RSI oversold recovery', 'Whale accumulation detected']
+        },
+        'defi-strategy': {
+            strategy: 'Yield farming optimization',
+            pools: ['SOL-USDC', 'RAY-SOL', 'ORCA-USDC'],
+            expected_apy: '12.5%',
+            risk_level: 'Medium',
+            instructions: 'Rotate between pools based on TVL changes'
+        },
+        'price-prediction': {
+            asset: 'SOL',
+            current_price: 98.5,
+            predicted_price_24h: 105.2,
+            predicted_price_7d: 115.8,
+            confidence_24h: 0.78,
+            confidence_7d: 0.65
+        },
+        'risk-assessment': {
+            asset: 'SOL',
+            risk_score: 6.5,
+            factors: ['Market volatility', 'Liquidity risk', 'Smart contract risk'],
+            recommendation: 'Medium risk - suitable for balanced portfolios'
+        },
+        'trend-analysis': {
+            trend: 'Bullish',
+            duration: '7 days',
+            strength: 0.78,
+            indicators: ['Moving averages', 'Volume profile', 'Social sentiment']
+        }
+    };
+
+    return samples[intelligence.category] || { generic_data: 'Intelligence data payload' };
 }

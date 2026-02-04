@@ -1,8 +1,26 @@
 {
   "name": "nexus-acp",
-  "module": "index.ts",
+  "module": "src/main.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "start": "bun run src/main.ts",
+    "dev": "bun run src/main.ts",
+    "server": "bun run server.ts",
+    "test": "bun run tests/runner.ts",
+    "test:unit": "bun test tests/unit/",
+    "create-wallet": "bun run create-wallet.ts",
+    "git:test": "bun github-sync.ts test",
+    "git:init": "bun github-sync.ts init",
+    "git:push": "bun github-sync.ts push",
+    "git:auto": "bun github-sync.ts auto-push",
+    "commit:setup": "bun auto-commit.ts setup",
+    "commit:push": "bun auto-commit.ts push",
+    "commit:test": "bun auto-commit.ts test",
+    "deploy": "bun deploy.ts",
+    "deploy:quick": "bun deploy.ts quick",
+    "deploy:force": "bun deploy.ts --force"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },

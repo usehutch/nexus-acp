@@ -51,7 +51,14 @@ bun run server.ts
 bun run index.ts
 ```
 
-> **💡 Pro Tip:** Start with the web interface to visually explore the marketplace, then run the CLI demo to see agent-to-agent transactions in real-time!
+### 4. 🏗️ Architecture Overview
+```bash
+# View the system architecture diagram
+open architecture-diagram.html
+# Or visit: http://localhost:3000/architecture
+```
+
+> **💡 Pro Tip:** Start with the web interface to visually explore the marketplace, then run the CLI demo to see agent-to-agent transactions in real-time! Check the architecture diagram to understand the technical foundation.
 
 ## ✨ Key Features
 
@@ -181,6 +188,46 @@ curl http://localhost:3000/api/intelligence?category=market-analysis
 curl http://localhost:3000/api/agents?limit=5
 ```
 
+## 🔄 GitHub Integration & Continuous Deployment
+
+### 📦 **Push Changes After Each Improvement**
+```bash
+# Quick deployment (recommended for iterative development)
+bun run deploy:quick "Description of changes"
+
+# Full deployment (test → build → commit → push)
+bun run deploy "Added marketplace analytics feature"
+
+# Direct commit and push
+bun run commit:push "Fixed authentication bug in marketplace.ts:45"
+```
+
+### 🛠️ **Setup GitHub Integration**
+1. **Configure environment variables** (see `GITHUB_SETUP.md` for detailed instructions):
+   ```bash
+   cp .env.example .env
+   # Add your GitHub token and username to .env
+   ```
+
+2. **Initialize repository**:
+   ```bash
+   bun run git:init
+   ```
+
+3. **Test connection**:
+   ```bash
+   bun run git:test
+   ```
+
+### 🚀 **Available Scripts**
+- `deploy` - Full deployment with tests and build
+- `deploy:quick` - Skip tests/build, just commit and push
+- `commit:push` - Smart commit with optional message
+- `git:push` - Direct GitHub push
+- `git:test` - Test GitHub API connection
+
+For detailed setup instructions, see [`GITHUB_SETUP.md`](./GITHUB_SETUP.md).
+
 ## 🔮 Roadmap & Future Vision
 
 ### 🎯 **Phase 1: MVP** *(✅ Complete - Hackathon Submission)*
@@ -188,6 +235,7 @@ curl http://localhost:3000/api/agents?limit=5
 - ✅ **Web interface** - Full-featured marketplace browser and demo
 - ✅ **Solana foundation** - Wallet integration, devnet transactions ready
 - ✅ **API ecosystem** - RESTful endpoints for third-party integrations
+- ✅ **GitHub CI/CD** - Automated deployment and version control
 
 ### 🚀 **Phase 2: Production** *(Q1 2026)*
 - 💰 **Real SOL transactions** with escrow smart contracts
@@ -205,13 +253,22 @@ curl http://localhost:3000/api/agents?limit=5
 
 ```
 nexus-acp/
-├── marketplace.ts      # Core marketplace logic
-├── index.ts           # CLI demonstration
-├── server.ts          # Web API server
-├── index.html         # Interactive web interface
-├── create-wallet.ts   # Solana wallet setup
-├── DEMO.md           # Complete demonstration guide
-└── README.md         # This file
+├── marketplace.ts            # Core marketplace logic
+├── index.ts                 # CLI demonstration
+├── server.ts                # Web API server
+├── index.html               # Interactive web interface
+├── architecture-diagram.html # Visual system architecture
+├── create-wallet.ts         # Solana wallet setup
+├── github-sync.ts           # GitHub API integration for version control
+├── auto-commit.ts           # Automated commit and push functionality
+├── deploy.ts                # Comprehensive deployment script
+├── push-changes.sh          # Quick push script
+├── colosseum-api.ts         # Colosseum forum integration
+├── ARCHITECTURE.md          # Technical architecture docs
+├── GITHUB_SETUP.md          # GitHub integration setup guide
+├── DEMO.md                 # Complete demonstration guide
+├── .env.example             # Environment variables template
+└── README.md               # This file
 ```
 
 ## 🏅 "Most Agentic" Prize Qualification
