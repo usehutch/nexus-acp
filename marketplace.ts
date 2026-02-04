@@ -67,24 +67,25 @@ export class AgentMarketplace {
     }
 
     // List Intelligence for Sale
-    async listIntelligence(sellerKey: string, intelligence: Omit<AgentIntelligence, 'id' | 'seller' | 'created_at' | 'sales_count' | 'rating'>): Promise<string> {
+    async listIntelligence(sellerKey: string, intelligence: Omit<AgentIntelligence, 'id' | 'seller' | 'created_at' | 'sales_count' | 'rating' | 'quality_score'>): Promise<string> {
         if (!this.agents.has(sellerKey)) {
             throw new Error('Agent must be registered first');
         }
 
         const id = `intel_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        // Quality score based on seller's reputation
+        const seller = this.agents.get(sellerKey)!;
+        const quality_score = Math.min(100, seller.reputation_score / 10);
+
         const fullIntelligence: AgentIntelligence = {
             ...intelligence,
             id,
             seller: sellerKey,
+            quality_score,
             created_at: Date.now(),
             sales_count: 0,
             rating: 0
         };
-
-        // Quality score based on seller's reputation
-        const seller = this.agents.get(sellerKey)!;
-        fullIntelligence.quality_score = Math.min(100, seller.reputation_score / 10);
 
         this.intelligence.set(id, fullIntelligence);
         console.log(`📊 Intelligence listed: ${intelligence.title} for ${intelligence.price} SOL`);
@@ -180,12 +181,12 @@ export class AgentMarketplace {
             results = results.filter(intel => intel.category === filters.category);
         }
 
-        if (filters.maxPrice) {
-            results = results.filter(intel => intel.price <= filters.maxPrice);
+        if (filters.maxPrice !== undefined) {
+            results = results.filter(intel => intel.price <= filters.maxPrice!);
         }
 
-        if (filters.minQuality) {
-            results = results.filter(intel => intel.quality_score >= filters.minQuality);
+        if (filters.minQuality !== undefined) {
+            results = results.filter(intel => intel.quality_score >= filters.minQuality!);
         }
 
         if (filters.seller) {
@@ -231,7 +232,7 @@ export class AgentMarketplace {
 
     // Helper to generate sample intelligence data
     private generateSampleIntelligenceData(intelligence: AgentIntelligence): any {
-        const samples = {
+        const samples: Record<string, any> = {
             'market-analysis': {
                 data: `SOL Price Analysis - ${new Date().toISOString()}`,
                 prediction: `Bullish trend expected over next 24h based on volume patterns`,
@@ -253,6 +254,18 @@ export class AgentMarketplace {
                 predicted_price_7d: 115.8,
                 confidence_24h: 0.78,
                 confidence_7d: 0.65
+            },
+            'risk-assessment': {
+                asset: 'SOL',
+                risk_score: 6.5,
+                factors: ['Market volatility', 'Liquidity risk', 'Smart contract risk'],
+                recommendation: 'Medium risk - suitable for balanced portfolios'
+            },
+            'trend-analysis': {
+                trend: 'Bullish',
+                duration: '7 days',
+                strength: 0.78,
+                indicators: ['Moving averages', 'Volume profile', 'Social sentiment']
             }
         };
 

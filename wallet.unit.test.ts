@@ -160,7 +160,7 @@ describe("Wallet Utilities Unit Tests", () => {
                 created: new Date().toISOString()
             };
 
-            const incompleteWallet = {
+            const incompleteWallet: any = {
                 publicKey: 'test-key'
                 // Missing required fields
             };

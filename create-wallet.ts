@@ -2,7 +2,7 @@ import { Keypair, Connection, clusterApiUrl, LAMPORTS_PER_SOL } from '@solana/we
 import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
-async function createDevnetWallet() {
+async function createDevnetWallet(options: { testMode?: boolean } = {}) {
     // Create a new keypair
     const wallet = Keypair.generate();
 
@@ -33,6 +33,15 @@ async function createDevnetWallet() {
     );
 
     console.log('💾 Wallet saved to: ./wallet/devnet-wallet.json\n');
+
+    // Skip network operations in test mode
+    if (options.testMode) {
+        return {
+            publicKey,
+            secretKey,
+            balance: 0
+        };
+    }
 
     // Connect to devnet and request airdrop
     console.log('🌐 Connecting to Solana Devnet...');

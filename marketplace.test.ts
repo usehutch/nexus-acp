@@ -392,7 +392,7 @@ describe("AgentMarketplace", () => {
 
             // Verify sorting by reputation score
             for (let i = 0; i < topAgents.length - 1; i++) {
-                expect(topAgents[i].reputation_score).toBeGreaterThanOrEqual(topAgents[i + 1].reputation_score);
+                expect(topAgents[i]!.reputation_score).toBeGreaterThanOrEqual(topAgents[i + 1]!.reputation_score);
             }
         });
 

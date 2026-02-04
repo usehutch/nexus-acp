@@ -33,12 +33,12 @@ describe("Main Application Integration Tests", () => {
     describe("Full Application Workflow", () => {
         test("should complete end-to-end workflow: create wallet -> test -> marketplace operations", async () => {
             // Step 1: Create a wallet
-            const walletInfo = await createDevnetWallet();
+            const walletInfo = await createDevnetWallet({ testMode: true });
             expect(walletInfo.publicKey).toBeDefined();
             expect(walletInfo.secretKey).toBeDefined();
 
             // Step 2: Test the wallet
-            const testResult = await testWallet();
+            const testResult = await testWallet({ testMode: true });
             expect(testResult.signatureTest).toBe(true);
             expect(testResult.publicKey).toBe(walletInfo.publicKey);
 
@@ -137,7 +137,7 @@ describe("Main Application Integration Tests", () => {
 
         test("should load existing wallet correctly", async () => {
             // Create wallet
-            const walletInfo = await createDevnetWallet();
+            const walletInfo = await createDevnetWallet({ testMode: true });
 
             // Verify wallet file exists and is readable
             const walletPath = join(process.cwd(), 'wallet', 'devnet-wallet.json');
@@ -156,7 +156,7 @@ describe("Main Application Integration Tests", () => {
     describe("Marketplace Integration", () => {
         test("should perform complete purchase and rating workflow", async () => {
             // Create two wallets - one seller, one buyer
-            await createDevnetWallet();
+            await createDevnetWallet({ testMode: true });
             const walletData = JSON.parse(readFileSync(join(process.cwd(), 'wallet', 'devnet-wallet.json'), 'utf-8'));
             const sellerWallet = Keypair.fromSecretKey(new Uint8Array(walletData.secretKey));
 
@@ -209,7 +209,7 @@ describe("Main Application Integration Tests", () => {
 
         test("should handle search and filtering correctly", async () => {
             // Create and register agent
-            await createDevnetWallet();
+            await createDevnetWallet({ testMode: true });
             const walletData = JSON.parse(readFileSync(join(process.cwd(), 'wallet', 'devnet-wallet.json'), 'utf-8'));
             const wallet = Keypair.fromSecretKey(new Uint8Array(walletData.secretKey));
 

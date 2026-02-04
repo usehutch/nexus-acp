@@ -67,30 +67,32 @@ async function demonstrateMarketplace(marketplace: AgentMarketplace, wallet: Key
             console.log('💳 Making test purchase...');
             const targetIntelligence = available[0]; // Buy the first one
 
-            try {
-                const purchase = await marketplace.purchaseIntelligence(
-                    wallet.publicKey.toString(),
-                    targetIntelligence.id
-                );
-
-                if (purchase.success) {
-                    console.log('✅ Purchase successful!');
-                    console.log('📦 Intelligence Data Received:');
-                    console.log(JSON.stringify(purchase.data, null, 2));
-                    console.log();
-
-                    // Rate the intelligence
-                    console.log('⭐ Rating the intelligence...');
-                    await marketplace.rateIntelligence(
+            if (targetIntelligence) {
+                try {
+                    const purchase = await marketplace.purchaseIntelligence(
                         wallet.publicKey.toString(),
-                        targetIntelligence.id,
-                        5,
-                        'Excellent analysis, very helpful!'
+                        targetIntelligence.id
                     );
-                    console.log('✅ Rating submitted!\n');
+
+                    if (purchase.success) {
+                        console.log('✅ Purchase successful!');
+                        console.log('📦 Intelligence Data Received:');
+                        console.log(JSON.stringify(purchase.data, null, 2));
+                        console.log();
+
+                        // Rate the intelligence
+                        console.log('⭐ Rating the intelligence...');
+                        await marketplace.rateIntelligence(
+                            wallet.publicKey.toString(),
+                            targetIntelligence.id,
+                            5,
+                            'Excellent analysis, very helpful!'
+                        );
+                        console.log('✅ Rating submitted!\n');
+                    }
+                } catch (error) {
+                    console.log('❌ Purchase failed:', error);
                 }
-            } catch (error) {
-                console.log('❌ Purchase failed:', error);
             }
         }
 

@@ -2,7 +2,7 @@ import { Keypair, Connection, clusterApiUrl, PublicKey } from '@solana/web3.js';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-async function testWallet() {
+async function testWallet(options: { testMode?: boolean } = {}) {
     try {
         // Read wallet from file
         const walletPath = join(process.cwd(), 'wallet', 'devnet-wallet.json');
@@ -16,20 +16,26 @@ async function testWallet() {
         console.log('📍 Public Key:', wallet.publicKey.toString());
         console.log('✅ Keypair restored from file successfully');
 
-        // Connect to devnet
-        const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
+        // Skip network operations in test mode
+        let balance = 0;
+        let accountInfo = null;
 
-        // Check balance
-        console.log('\n🌐 Connecting to Solana Devnet...');
-        const balance = await connection.getBalance(wallet.publicKey);
-        console.log('💰 Current balance:', balance / 1000000000, 'SOL');
+        if (!options.testMode) {
+            // Connect to devnet
+            const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
 
-        // Get account info
-        const accountInfo = await connection.getAccountInfo(wallet.publicKey);
-        console.log('📊 Account Info:');
-        console.log('  - Exists:', accountInfo !== null);
-        console.log('  - Lamports:', balance);
-        console.log('  - Owner:', accountInfo?.owner?.toString() || 'None');
+            // Check balance
+            console.log('\n🌐 Connecting to Solana Devnet...');
+            balance = await connection.getBalance(wallet.publicKey);
+            console.log('💰 Current balance:', balance / 1000000000, 'SOL');
+
+            // Get account info
+            accountInfo = await connection.getAccountInfo(wallet.publicKey);
+            console.log('📊 Account Info:');
+            console.log('  - Exists:', accountInfo !== null);
+            console.log('  - Lamports:', balance);
+            console.log('  - Owner:', accountInfo?.owner?.toString() || 'None');
+        }
 
         // Test signature capability
         console.log('\n🔐 Testing signature capability...');

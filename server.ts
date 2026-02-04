@@ -63,7 +63,8 @@ Bun.serve({
         "/api/purchase": {
             POST: async (req) => {
                 try {
-                    const { intelligenceId, buyerKey } = await req.json();
+                    const body = await req.json() as { intelligenceId?: string; buyerKey?: string };
+                    const { intelligenceId, buyerKey } = body;
 
                     if (!intelligenceId || !buyerKey) {
                         return Response.json({ error: 'Missing required fields' }, { status: 400 });
@@ -72,7 +73,8 @@ Bun.serve({
                     const result = await marketplace.purchaseIntelligence(buyerKey, intelligenceId);
                     return Response.json(result);
                 } catch (error) {
-                    return Response.json({ error: error.message }, { status: 400 });
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                    return Response.json({ error: errorMessage }, { status: 400 });
                 }
             }
         },
@@ -81,7 +83,8 @@ Bun.serve({
         "/api/rate": {
             POST: async (req) => {
                 try {
-                    const { intelligenceId, buyerKey, rating, review } = await req.json();
+                    const body = await req.json() as { intelligenceId?: string; buyerKey?: string; rating?: number; review?: string };
+                    const { intelligenceId, buyerKey, rating, review } = body;
 
                     if (!intelligenceId || !buyerKey || !rating) {
                         return Response.json({ error: 'Missing required fields' }, { status: 400 });
@@ -90,7 +93,8 @@ Bun.serve({
                     await marketplace.rateIntelligence(buyerKey, intelligenceId, rating, review);
                     return Response.json({ success: true });
                 } catch (error) {
-                    return Response.json({ error: error.message }, { status: 400 });
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                    return Response.json({ error: errorMessage }, { status: 400 });
                 }
             }
         },
@@ -99,7 +103,8 @@ Bun.serve({
         "/api/register": {
             POST: async (req) => {
                 try {
-                    const { publicKey, name, description, specialization } = await req.json();
+                    const body = await req.json() as { publicKey?: string; name?: string; description?: string; specialization?: string[] };
+                    const { publicKey, name, description, specialization } = body;
 
                     if (!publicKey || !name || !description || !specialization) {
                         return Response.json({ error: 'Missing required fields' }, { status: 400 });
@@ -114,7 +119,8 @@ Bun.serve({
 
                     return Response.json({ success: true });
                 } catch (error) {
-                    return Response.json({ error: error.message }, { status: 400 });
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                    return Response.json({ error: errorMessage }, { status: 400 });
                 }
             }
         },
@@ -123,7 +129,8 @@ Bun.serve({
         "/api/list": {
             POST: async (req) => {
                 try {
-                    const { sellerKey, title, description, category, price } = await req.json();
+                    const body = await req.json() as { sellerKey?: string; title?: string; description?: string; category?: string; price?: string | number };
+                    const { sellerKey, title, description, category, price } = body;
 
                     if (!sellerKey || !title || !description || !category || !price) {
                         return Response.json({ error: 'Missing required fields' }, { status: 400 });
@@ -132,13 +139,14 @@ Bun.serve({
                     const id = await marketplace.listIntelligence(sellerKey, {
                         title,
                         description,
-                        category,
-                        price: parseFloat(price)
+                        category: category as any,
+                        price: typeof price === 'string' ? parseFloat(price) : price
                     });
 
                     return Response.json({ success: true, id });
                 } catch (error) {
-                    return Response.json({ error: error.message }, { status: 400 });
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                    return Response.json({ error: errorMessage }, { status: 400 });
                 }
             }
         },
@@ -170,16 +178,19 @@ Bun.serve({
                     const intelligence = marketplace.searchIntelligence();
                     if (intelligence.length > 0) {
                         const randomIntel = intelligence[Math.floor(Math.random() * intelligence.length)];
-                        const result = await marketplace.purchaseIntelligence('DEMO_AI_AGENT', randomIntel.id);
+                        if (randomIntel) {
+                            const result = await marketplace.purchaseIntelligence('DEMO_AI_AGENT', randomIntel.id);
 
-                        if (result.success) {
-                            await marketplace.rateIntelligence('DEMO_AI_AGENT', randomIntel.id, 4 + Math.random(), 'Automated agent purchase');
+                            if (result.success) {
+                                await marketplace.rateIntelligence('DEMO_AI_AGENT', randomIntel.id, 4 + Math.random(), 'Automated agent purchase');
+                            }
                         }
                     }
 
                     return Response.json({ success: true, message: 'Agent activity simulated' });
                 } catch (error) {
-                    return Response.json({ error: error.message }, { status: 400 });
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                    return Response.json({ error: errorMessage }, { status: 400 });
                 }
             }
         }

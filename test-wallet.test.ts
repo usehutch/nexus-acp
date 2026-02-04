@@ -24,9 +24,9 @@ describe("testWallet", () => {
 
     test("should successfully test a valid wallet", async () => {
         // First create a wallet to test
-        await createDevnetWallet();
+        await createDevnetWallet({ testMode: true });
 
-        const result = await testWallet();
+        const result = await testWallet({ testMode: true });
 
         expect(result).toBeDefined();
         expect(typeof result.publicKey).toBe('string');
@@ -36,24 +36,24 @@ describe("testWallet", () => {
     });
 
     test("should throw error when wallet file doesn't exist", async () => {
-        await expect(testWallet()).rejects.toThrow();
+        await expect(testWallet({ testMode: true })).rejects.toThrow();
     });
 
     test("should correctly read wallet data from file", async () => {
         // Create a wallet first
-        const createdWallet = await createDevnetWallet();
+        const createdWallet = await createDevnetWallet({ testMode: true });
 
-        const testResult = await testWallet();
+        const testResult = await testWallet({ testMode: true });
 
         expect(testResult.publicKey).toBe(createdWallet.publicKey);
     });
 
     test("should validate keypair restoration from secret key", async () => {
         // Create a wallet first
-        await createDevnetWallet();
+        await createDevnetWallet({ testMode: true });
 
         // Test wallet should successfully restore the keypair
-        const result = await testWallet();
+        const result = await testWallet({ testMode: true });
 
         expect(result.signatureTest).toBe(true);
         expect(typeof result.publicKey).toBe('string');
@@ -61,9 +61,9 @@ describe("testWallet", () => {
 
     test("should connect to Solana devnet successfully", async () => {
         // Create a wallet first
-        await createDevnetWallet();
+        await createDevnetWallet({ testMode: true });
 
-        const result = await testWallet();
+        const result = await testWallet({ testMode: true });
 
         // If the function completes without error, devnet connection worked
         expect(result).toBeDefined();
@@ -72,9 +72,9 @@ describe("testWallet", () => {
 
     test("should handle wallet with zero balance", async () => {
         // Create a wallet first
-        await createDevnetWallet();
+        await createDevnetWallet({ testMode: true });
 
-        const result = await testWallet();
+        const result = await testWallet({ testMode: true });
 
         // Balance can be zero (common on devnet when airdrop fails)
         expect(result.balance).toBeGreaterThanOrEqual(0);
@@ -83,9 +83,9 @@ describe("testWallet", () => {
 
     test("should return correct wallet information structure", async () => {
         // Create a wallet first
-        await createDevnetWallet();
+        await createDevnetWallet({ testMode: true });
 
-        const result = await testWallet();
+        const result = await testWallet({ testMode: true });
 
         expect(result).toHaveProperty('publicKey');
         expect(result).toHaveProperty('balance');
@@ -107,7 +107,7 @@ describe("testWallet", () => {
         const walletPath = join(walletDir, 'devnet-wallet.json');
         writeFileSync(walletPath, 'invalid json content');
 
-        await expect(testWallet()).rejects.toThrow();
+        await expect(testWallet({ testMode: true })).rejects.toThrow();
     });
 
     test("should handle wallet file with missing secretKey", async () => {
@@ -125,7 +125,7 @@ describe("testWallet", () => {
         };
         writeFileSync(walletPath, JSON.stringify(invalidWalletData));
 
-        await expect(testWallet()).rejects.toThrow();
+        await expect(testWallet({ testMode: true })).rejects.toThrow();
     });
 
     test("should handle wallet file with invalid secretKey format", async () => {
@@ -143,14 +143,14 @@ describe("testWallet", () => {
         };
         writeFileSync(walletPath, JSON.stringify(invalidWalletData));
 
-        await expect(testWallet()).rejects.toThrow();
+        await expect(testWallet({ testMode: true })).rejects.toThrow();
     });
 
     test("should validate public key format in result", async () => {
         // Create a wallet first
-        await createDevnetWallet();
+        await createDevnetWallet({ testMode: true });
 
-        const result = await testWallet();
+        const result = await testWallet({ testMode: true });
 
         // Solana public keys are base58 encoded
         expect(result.publicKey).toMatch(/^[1-9A-HJ-NP-Za-km-z]+$/);
@@ -160,18 +160,18 @@ describe("testWallet", () => {
 
     test("should complete signature test successfully", async () => {
         // Create a wallet first
-        await createDevnetWallet();
+        await createDevnetWallet({ testMode: true });
 
-        const result = await testWallet();
+        const result = await testWallet({ testMode: true });
 
         expect(result.signatureTest).toBe(true);
     });
 
     test("should report account existence correctly", async () => {
         // Create a wallet first
-        await createDevnetWallet();
+        await createDevnetWallet({ testMode: true });
 
-        const result = await testWallet();
+        const result = await testWallet({ testMode: true });
 
         // Account existence can be true or false depending on whether
         // the wallet has been used on devnet before
@@ -180,11 +180,11 @@ describe("testWallet", () => {
 
     test("should handle network connection timeouts gracefully", async () => {
         // Create a wallet first
-        await createDevnetWallet();
+        await createDevnetWallet({ testMode: true });
 
         // This test ensures the function doesn't hang indefinitely
         const startTime = Date.now();
-        const result = await testWallet();
+        const result = await testWallet({ testMode: true });
         const endTime = Date.now();
 
         // Should complete within reasonable time (30 seconds)
@@ -194,11 +194,11 @@ describe("testWallet", () => {
 
     test("should use correct devnet connection settings", async () => {
         // Create a wallet first
-        await createDevnetWallet();
+        await createDevnetWallet({ testMode: true });
 
         // This test verifies the connection parameters are correct
         // by ensuring the test completes without connection errors
-        const result = await testWallet();
+        const result = await testWallet({ testMode: true });
 
         expect(result).toBeDefined();
         expect(typeof result.balance).toBe('number');
