@@ -19,7 +19,7 @@ if (existsSync(walletPath)) {
 
 // Bun server with API endpoints
 Bun.serve({
-    port: 3000,
+    port: 3001,
     routes: {
         "/": indexHtml,
 
@@ -160,6 +160,28 @@ Bun.serve({
                     return Response.json({ error: 'Failed to get wallet info' }, { status: 500 });
                 }
             }
+        },
+
+        // Simulate agent activity for demo
+        "/api/simulate": {
+            POST: async () => {
+                try {
+                    // Simulate an AI agent purchase
+                    const intelligence = marketplace.searchIntelligence();
+                    if (intelligence.length > 0) {
+                        const randomIntel = intelligence[Math.floor(Math.random() * intelligence.length)];
+                        const result = await marketplace.purchaseIntelligence('DEMO_AI_AGENT', randomIntel.id);
+
+                        if (result.success) {
+                            await marketplace.rateIntelligence('DEMO_AI_AGENT', randomIntel.id, 4 + Math.random(), 'Automated agent purchase');
+                        }
+                    }
+
+                    return Response.json({ success: true, message: 'Agent activity simulated' });
+                } catch (error) {
+                    return Response.json({ error: error.message }, { status: 400 });
+                }
+            }
         }
     },
 
@@ -170,5 +192,5 @@ Bun.serve({
 });
 
 console.log('🚀 NEXUS Agent Intelligence Marketplace Server');
-console.log('🌐 Server running on http://localhost:3000');
+console.log('🌐 Server running on http://localhost:3001');
 console.log('💡 First AI-to-AI knowledge trading platform on Solana!');

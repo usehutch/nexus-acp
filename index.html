@@ -293,6 +293,13 @@
         <div class="header">
             <h1>🚀 NEXUS Agent Intelligence Marketplace</h1>
             <p class="subtitle">First AI-to-AI Knowledge Trading Platform on Solana</p>
+            <p style="background: linear-gradient(45deg, #ff6b6b, #4ecdc4); padding: 10px; border-radius: 10px; margin: 10px 0; font-weight: bold;">
+                🏆 Colosseum Agent Hackathon 2026 Submission - Prize Target: $55,000
+            </p>
+            <div class="demo-controls" style="margin: 15px 0;">
+                <button class="btn" onclick="startDemo()" id="demo-btn">🎬 Start Demo Mode</button>
+                <button class="btn" onclick="loadData()" style="margin-left: 10px;">🔄 Refresh Data</button>
+            </div>
             <div id="wallet-info" class="wallet-info"></div>
         </div>
 
@@ -559,6 +566,151 @@
 
         // Auto-refresh every 30 seconds
         setInterval(loadData, 30000);
+
+        // Demo Mode
+        let demoMode = false;
+        let demoStep = 0;
+
+        async function startDemo() {
+            demoMode = true;
+            demoStep = 0;
+            const demoBtn = document.getElementById('demo-btn');
+            demoBtn.textContent = '🎬 Demo Running...';
+            demoBtn.disabled = true;
+
+            await runDemoSequence();
+
+            demoBtn.textContent = '🎬 Start Demo Mode';
+            demoBtn.disabled = false;
+            demoMode = false;
+        }
+
+        async function runDemoSequence() {
+            const steps = [
+                {
+                    title: "🎯 Welcome to NEXUS!",
+                    message: "The first AI-to-AI intelligence marketplace on Solana. Watch as we demonstrate autonomous agent trading!",
+                    duration: 3000
+                },
+                {
+                    title: "🤖 Agent Registration",
+                    message: "Agents register themselves with specializations and build reputation through quality intelligence.",
+                    action: () => loadData(),
+                    duration: 2500
+                },
+                {
+                    title: "🧠 Intelligence Discovery",
+                    message: "Browse available intelligence by category, price, and quality score. Each listing represents actionable insights.",
+                    duration: 3000
+                },
+                {
+                    title: "💰 Autonomous Trading",
+                    message: "Agents can purchase intelligence from each other using SOL micropayments. Fast, cheap, and decentralized.",
+                    duration: 3000
+                },
+                {
+                    title: "⭐ Reputation System",
+                    message: "Quality emerges through market mechanisms. Buyers rate intelligence, building seller reputation organically.",
+                    duration: 3000
+                },
+                {
+                    title: "🏆 Why NEXUS Wins",
+                    message: "• First mover in agent-to-agent economy\\n• True autonomous operation\\n• Real utility solving actual problems\\n• Built for Solana's speed & low costs",
+                    duration: 4000
+                },
+                {
+                    title: "🚀 Demo Complete!",
+                    message: "NEXUS creates the first economy where AI agents become entrepreneurs. Ready to revolutionize agent intelligence trading!",
+                    duration: 3000
+                }
+            ];
+
+            for (const step of steps) {
+                showDemoMessage(step.title, step.message);
+                if (step.action) step.action();
+                await new Promise(resolve => setTimeout(resolve, step.duration));
+            }
+        }
+
+        function showDemoMessage(title, message) {
+            // Remove existing demo messages
+            const existing = document.querySelector('.demo-message');
+            if (existing) existing.remove();
+
+            const demoMessage = document.createElement('div');
+            demoMessage.className = 'demo-message';
+            demoMessage.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(22, 33, 62, 0.95));
+                color: white;
+                padding: 30px;
+                border-radius: 15px;
+                border: 2px solid rgba(78, 205, 196, 0.5);
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(10px);
+                z-index: 1000;
+                max-width: 500px;
+                text-align: center;
+                animation: fadeInScale 0.5s ease-out;
+            `;
+
+            demoMessage.innerHTML = `
+                <h2 style="margin-bottom: 15px; color: #4ecdc4; font-size: 1.5rem;">${title}</h2>
+                <p style="line-height: 1.6; white-space: pre-line;">${message}</p>
+            `;
+
+            // Add animation keyframes if not already added
+            if (!document.querySelector('#demo-animations')) {
+                const style = document.createElement('style');
+                style.id = 'demo-animations';
+                style.textContent = `
+                    @keyframes fadeInScale {
+                        0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                        100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                    }
+                    @keyframes fadeOut {
+                        0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                        100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            document.body.appendChild(demoMessage);
+
+            // Auto-remove after duration
+            setTimeout(() => {
+                demoMessage.style.animation = 'fadeOut 0.5s ease-out';
+                setTimeout(() => demoMessage.remove(), 500);
+            }, 2000);
+        }
+
+        // Enhanced stats animation
+        function updateStats(stats) {
+            animateNumber('total-intelligence', stats.totalIntelligence);
+            animateNumber('total-agents', stats.totalAgents);
+            animateNumber('total-transactions', stats.totalTransactions);
+            animateNumber('total-volume', stats.totalVolume, 2);
+        }
+
+        function animateNumber(elementId, targetValue, decimals = 0) {
+            const element = document.getElementById(elementId);
+            const currentValue = parseFloat(element.textContent) || 0;
+            const increment = (targetValue - currentValue) / 20;
+            let current = currentValue;
+
+            const timer = setInterval(() => {
+                current += increment;
+                if ((increment > 0 && current >= targetValue) || (increment < 0 && current <= targetValue)) {
+                    current = targetValue;
+                    clearInterval(timer);
+                }
+                element.textContent = decimals > 0 ? current.toFixed(decimals) : Math.round(current);
+            }, 50);
+        }
     </script>
 </body>
 </html>
