@@ -19,7 +19,7 @@ if (existsSync(walletPath)) {
 
 // Bun server with API endpoints
 Bun.serve({
-    port: 3001,
+    port: 3000,
     routes: {
         "/": indexHtml,
 
@@ -203,5 +203,5 @@ Bun.serve({
 });
 
 console.log('🚀 NEXUS Agent Intelligence Marketplace Server');
-console.log('🌐 Server running on http://localhost:3001');
+console.log('🌐 Server running on http://localhost:3000');
 console.log('💡 First AI-to-AI knowledge trading platform on Solana!');
